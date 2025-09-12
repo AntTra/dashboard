@@ -4,7 +4,6 @@ import numpy as np
 import pyautogui
 import autopy
 import time
-import speech_recognition as sr
 
 class GestureRecognizer:
     def __init__(self, activeMode=False, maxHands=1, detectionConfidence=False, trackingConfidence=0.5):
@@ -82,9 +81,6 @@ def main():
     stab_rad = 10
     scroll_down_speed = -60
     scroll_up_speed = 60
-    
-    r = sr.Recognizer()
-    m = sr.Microphone()
 
     cap = cv2.VideoCapture(0)
     cap.set(3, w)

@@ -5,14 +5,14 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { useEffect, useRef } from 'react';
 
 // Import textures (Next will give StaticImageData)
-import earthmap from './textures/00_earthmap1k.jpg';
-import earthbump from './textures/01_earthbump1k.jpg';
-import earthspec from './textures/02_earthspec1k.jpg';
-import earthlights from './textures/03_earthlights1k.jpg';
-import earthcloudmap from './textures/04_earthcloudmap.jpg';
-import earthcloudmaptrans from './textures/05_earthcloudmaptrans.jpg';
-import moonbump from './textures/moonbump1k.jpg'
-import moonmap from './textures/moonmap1k.jpg'
+import earthmap from './solarTextures/00_earthmap1k.jpg';
+import earthbump from './solarTextures/01_earthbump1k.jpg';
+import earthspec from './solarTextures/02_earthspec1k.jpg';
+import earthlights from './solarTextures/03_earthlights1k.jpg';
+import earthcloudmap from './solarTextures/04_earthcloudmap.jpg';
+import earthcloudmaptrans from './solarTextures/05_earthcloudmaptrans.jpg';
+import moonbump from './solarTextures/moonbump1k.jpg'
+import moonmap from './solarTextures/moonmap1k.jpg'
 
 type Img = { src: string };
 
@@ -34,7 +34,7 @@ const Globe: React.FC<IMyProps> = () => {
 		scene.background = new THREE.Color(0x000000);
 		scene.rotation.z = (-23.4 * Math.PI) / 180;
 
-		const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 1000);
+		const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
 		camera.position.set(0, 0, 3);
 
 		const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -47,10 +47,6 @@ const Globe: React.FC<IMyProps> = () => {
 
 		const controls = new OrbitControls(camera, renderer.domElement);
 		controls.enableDamping = true;
-
-		const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
-		dirLight.position.set(-2, 0.5, 1.5);
-		scene.add(dirLight);
 
 		const amb = new THREE.AmbientLight(0x404040, 0.1);
 		scene.add(amb);
@@ -95,7 +91,7 @@ const Globe: React.FC<IMyProps> = () => {
 			vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
 			float elv = texture2D(elevTexture, vUv).r;
 			vec3 vNormal = normalMatrix * normal;
-			vVisible = step(0.0, dot( -normalize(mvPosition.xyz), normalize(vNormal)));
+			vVisible = step(-1.0, dot( -normalize(mvPosition.xyz), normalize(vNormal)));
 			mvPosition.z += elev * elv;
 			gl_PointSize = size;
 			gl_Position = projectionMatrix * mvPosition;
@@ -153,10 +149,6 @@ const Globe: React.FC<IMyProps> = () => {
 		moonpoints.scale.setScalar(0.27);
 		moonGroup.add(moonpoints);
 
-		const sunLight = new THREE.DirectionalLight(0xffffff, 4.0);
-		sunLight.position.set(-2, 0.5, 1.5);
-		scene.add(sunLight);
-
 		let rafId = 0;
 		const animate = () => {
 			controls.update();
@@ -164,7 +156,7 @@ const Globe: React.FC<IMyProps> = () => {
 			rafId = requestAnimationFrame(animate);
 			globeGroup.rotateY(0.001)
 			globeGroup.rotateX(-0.0001)
-			moonGroup.rotateY(0.002)
+			moonGroup.rotateY(-0.002)
 		};
 		animate();
 

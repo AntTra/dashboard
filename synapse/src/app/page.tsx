@@ -29,7 +29,7 @@ export default function Page() {
               </Accordion.Trigger>
             </Accordion.Header>
             <Accordion.Panel className="px-3 py-2 text-sm text-zinc-400">
-              Our home planet 
+              My dad lives here 
             </Accordion.Panel>
           </Accordion.Item>
 
@@ -40,7 +40,7 @@ export default function Page() {
               </Accordion.Trigger>
             </Accordion.Header>
             <Accordion.Panel className="px-3 py-2 text-sm text-zinc-400">
-              The ringed giant 
+              My mom should move here
             </Accordion.Panel>
           </Accordion.Item>
         </Accordion.Root>

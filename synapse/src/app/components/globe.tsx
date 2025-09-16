@@ -2,7 +2,8 @@
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Meter } from '@base-ui-components/react/meter';
 
 // Import textures (Next will give StaticImageData)
 import earthmap from './solarTextures/00_earthmap1k.jpg';
@@ -22,27 +23,24 @@ interface IMyProps {
 
 const Globe: React.FC<IMyProps> = () => {
   	const mountRef = useRef<HTMLDivElement>(null);
-
+	const [fps, setFps] = useState(0);
   	useEffect(() => {
 		if (!mountRef.current) return;
 		const container = mountRef.current;
 
-		let width = container.clientWidth || 1280;
-		let height = container.clientHeight || 640;
+		let width = window.innerWidth;
+		let height = window.innerHeight;
 
 		const scene = new THREE.Scene();
 		scene.background = new THREE.Color(0x000000);
 		scene.rotation.z = (-23.4 * Math.PI) / 180;
 
-		const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
+		const camera = new THREE.PerspectiveCamera(50, width, 0.1, 1000);
 		camera.position.set(0, 0, 3);
 
-		const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+		const renderer = new THREE.WebGLRenderer({ antialias: true });
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 		renderer.setSize(width, height);
-		renderer.outputColorSpace = THREE.SRGBColorSpace;
-		renderer.toneMapping = THREE.ACESFilmicToneMapping;
-
 		container.appendChild(renderer.domElement);
 
 		const controls = new OrbitControls(camera, renderer.domElement);
@@ -150,6 +148,9 @@ const Globe: React.FC<IMyProps> = () => {
 		moonGroup.add(moonpoints);
 
 		let rafId = 0;
+		let lastTime = performance.now();
+		let frameCount = 0;
+		let accTime = 0;
 		const animate = () => {
 			controls.update();
 			renderer.render(scene, camera);
@@ -157,6 +158,18 @@ const Globe: React.FC<IMyProps> = () => {
 			globeGroup.rotateY(0.001)
 			globeGroup.rotateX(-0.0001)
 			moonGroup.rotateY(-0.002)
+
+			const now = performance.now();
+			const delta = (now - lastTime) / 1000; // seconds
+			lastTime = now;
+
+			frameCount++;
+			accTime += delta;
+			if (accTime >= 1) {
+				setFps(frameCount);
+				frameCount = 0;
+				accTime = 0;
+      }
 		};
 		animate();
 
@@ -190,8 +203,25 @@ const Globe: React.FC<IMyProps> = () => {
 			container.removeChild(renderer.domElement);
 		};
   	}, []);
+	const fpsColor = fps >= 60 ? 'text-green-400' : fps >= 30 ? 'text-yellow-300' : 'text-red-400';
 
-  	return <div ref={mountRef} style={{ width: '100%', maxWidth: 1280, height: 640 }} />;
+  	return (
+	<div className="relative w-full max-w-[1280px] h-full">
+		<div ref={mountRef} className="w-full h-full" />
+
+		<div
+		className={`absolute bottom-2 left-2 rounded-lg bg-black/60 px-2 py-1 font-mono text-xs pointer-events-none select-none ${
+			fps >= 60
+			? 'text-green-500'
+			: fps >= 30
+			? 'text-yellow-400'
+			: 'text-red-500'
+		}`}>
+		{fps} FPS
+		
+		</div> 
+	</div>
+	);
 };
 
 export default Globe;

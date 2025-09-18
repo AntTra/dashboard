@@ -3,8 +3,11 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { useEffect, useRef, useState } from 'react';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
 
-// Import textures (Next will give StaticImageData)
+
 import earthmap from './solarTextures/00_earthmap1k.jpg';
 import earthbump from './solarTextures/01_earthbump1k.jpg';
 import earthspec from './solarTextures/02_earthspec1k.jpg';
@@ -16,10 +19,11 @@ import moonmap from './solarTextures/moonmap1k.jpg'
 import saturnmap from './solarTextures/saturnmap.jpg'
 import saturnringmap from './solarTextures/saturnringcolor.jpg'
 import saturntrans from './solarTextures/saturnringpattern.gif'
+import trondbump from './solarTextures/trondheimbump.jpg'
 
 type Img = {src: string};
 
-export default function Globe({mode}: {mode: 'earth' | 'saturn'}) {
+export default function Globe({mode, clouds, night, moon}: {mode: 'earth' | 'saturn' | 'trondheim'; clouds: boolean; night: boolean; moon: boolean; }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const [fps, setFps] = useState(0);
 
@@ -34,7 +38,6 @@ export default function Globe({mode}: {mode: 'earth' | 'saturn'}) {
     // Scene
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
-    // Tilt “global” axis a bit (nice touch for Earth)
     scene.rotation.z = (-23.4 * Math.PI) / 180;
 
     // Camera
@@ -64,40 +67,35 @@ export default function Globe({mode}: {mode: 'earth' | 'saturn'}) {
     // Groups
     const earthGroup = new THREE.Group();
     const moonGroup = new THREE.Group();
-	const cloudGroup = new THREE.Group();
+		const cloudGroup = new THREE.Group();
     const saturnGroup = new THREE.Group();
-    scene.add(earthGroup, moonGroup, saturnGroup, cloudGroup);
+		const trondGroup = new THREE.Group();
+    scene.add(earthGroup, moonGroup, saturnGroup, cloudGroup, trondGroup);
 
-    // Shared point-sphere geometry
     const detail = 120;
     const spherePointsGeo = new THREE.IcosahedronGeometry(1, detail);
 
-    // === Earth + Moon ===
     if (mode === 'earth') {
       const map = loader.load((earthmap as unknown as Img).src);
       const bumpMap = loader.load((earthbump as unknown as Img).src);
       const specMap = loader.load((earthspec as unknown as Img).src);
-      const lightsMap = loader.load((earthlights as unknown as Img).src);
-      const cloudsMap = loader.load((earthcloudmap as unknown as Img).src);
       const cloudsAlpha = loader.load((earthcloudmaptrans as unknown as Img).src);
       const moonBump = loader.load((moonbump as unknown as Img).src);
       const moonMap = loader.load((moonmap as unknown as Img).src);
 
-      // Basic wireframe shell (reference grid)
       const grid = new THREE.Mesh(
         new THREE.IcosahedronGeometry(1, 10),
         new THREE.MeshBasicMaterial({color: 0x222222, wireframe: false, transparent: true, opacity: 0})
       );
       earthGroup.add(grid);
 
-      // Earth points shader
-      const vertexShader = `
+	  const vertexShader = `
         uniform float size;
         uniform float elev;
         uniform sampler2D elevTexture;
         varying vec2 vUv;
         varying float vVisible;
-		uniform float thresh;
+				uniform float thresh;
         void main() {
           vUv = uv;
           vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
@@ -114,10 +112,10 @@ export default function Globe({mode}: {mode: 'earth' | 'saturn'}) {
         uniform sampler2D alphaTexture;
         varying vec2 vUv;
         varying float vVisible;
-		uniform float alpha;
+				uniform float alpha;
         void main() {
           if (floor(vVisible + 0.1) == 0.0) discard;
-          float alpha = 1.2 - texture2D(alphaTexture, vUv).r;
+          float alpha = alpha - texture2D(alphaTexture, vUv).r;
           vec3 color = texture2D(colorTexture, vUv).rgb;
           gl_FragColor = vec4(color, alpha);
         }
@@ -130,7 +128,7 @@ export default function Globe({mode}: {mode: 'earth' | 'saturn'}) {
 				colorTexture: {value: map},
 				elevTexture: {value: bumpMap},
 				alphaTexture: {value: specMap},
-				alpha: {value: 1.3},
+				alpha: {value: 1.05},
 			},
 			vertexShader,
 			fragmentShader,
@@ -141,13 +139,13 @@ export default function Globe({mode}: {mode: 'earth' | 'saturn'}) {
 
       	// Moon points shader 
 		const moonMat = new THREE.ShaderMaterial({
-				uniforms: {
-					size: {value: 1.5},
-					elev: {value: 0.1},
-					colorTexture: {value: moonMap},
-					elevTexture: {value: moonBump},
-					alphaTexture: {value: moonBump},
-				},
+			uniforms: {
+				size: {value: 1.5},
+				elev: {value: 0.1},
+				colorTexture: {value: moonMap},
+				elevTexture: {value: moonBump},
+				alphaTexture: {value: moonBump},
+			},
 			vertexShader,
 			fragmentShader,
 			transparent: false,
@@ -161,31 +159,31 @@ export default function Globe({mode}: {mode: 'earth' | 'saturn'}) {
 			uniforms: {
 				size: {value: 1.5},
 				elev: {value: 0.1},
+				thresh: {value: 0.1},
 				colorTexture: {value: cloudsAlpha},
 				elevTexture: {value: cloudsAlpha},
 				alphaTexture: {value: cloudsAlpha},
-				alpha: {value: 1},
+				alpha: {value: 1.1},
 			},
 		vertexShader,
 		fragmentShader,
 		transparent: true,
 		opacity: 0.01,
 		});
-		const cloudPoints = new THREE.Points(new THREE.IcosahedronGeometry(1.01, detail), cloudMat);
+		const cloudPoints = new THREE.Points(new THREE.IcosahedronGeometry(1.001, detail), cloudMat);
+
 		cloudGroup.add(cloudPoints)
+
 	}
 
-    // === Saturn (points planet + textured point rings) ===
     if (mode === 'saturn') {
 		const saturnMapTex = loader.load((saturnmap as unknown as Img).src);
 		const saturnRingTexture = loader.load((saturnringmap as unknown as Img).src);
 		const saturnRingAlpha = loader.load((saturntrans as unknown as Img).src);
 
-		// Mark color textures as sRGB
 		saturnMapTex.colorSpace = THREE.SRGBColorSpace;
 		saturnRingTexture.colorSpace = THREE.SRGBColorSpace;
 
-		// Planet (points shader using colorTexture only)
 		const planetVert = `
 			uniform float size;
 			varying vec2 vUv;
@@ -217,7 +215,6 @@ export default function Globe({mode}: {mode: 'earth' | 'saturn'}) {
 		
 		const saturnPoints = new THREE.Points(spherePointsGeo, saturnMat);
 
-		// Ring point cloud using textures (color + alpha)
 		const R_INNER = 1.2;
 		const R_OUTER = 2.0;
 		const RING_COUNT = 2_000_000;
@@ -331,6 +328,12 @@ export default function Globe({mode}: {mode: 'earth' | 'saturn'}) {
 		saturnGroup.userData.updateAtm = updateAtm;
     }
 
+if (mode === 'trondheim') {
+
+}
+
+
+
     let rafId = 0;
     let last = performance.now();
     let frames = 0;
@@ -359,7 +362,6 @@ export default function Globe({mode}: {mode: 'earth' | 'saturn'}) {
 			moonGroup.rotateY(-0.002);
 		} else {
 			saturnGroup.rotateY(0.001);
-			// @ts-ignore
 			if (saturnGroup.userData.updateAtm) saturnGroup.userData.updateAtm();
 		}
 
@@ -399,13 +401,17 @@ export default function Globe({mode}: {mode: 'earth' | 'saturn'}) {
 				mat.dispose();
 			}
 		});
-
+		const T = (scene.userData as any)._trdCsv;
+		if (T) {
+			T.geo?.dispose();
+			T.mat?.dispose();
+		}
 		// remove canvas
 		if (renderer.domElement && container.contains(renderer.domElement)) {
 			container.removeChild(renderer.domElement);
 		}
 	};
-  }, [mode]);
+}, [mode]);
 
 	const fpsColor =
 		fps >= 60 ? 'text-green-400' : fps >= 30 ? 'text-yellow-300' : 'text-red-400';

@@ -10,6 +10,22 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 ## Getting Started
 
 First, make sure you have Node.js and npm installed.
+```bash
+# Install nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+
+# Reload your shell
+source ~/.bashrc
+
+# Install and use Node 20 (LTS)
+nvm install 20
+nvm use 20
+
+# Verify
+node -v
+
+npm install
+```
 
 Run the development server:
 

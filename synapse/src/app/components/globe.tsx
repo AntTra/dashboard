@@ -20,6 +20,7 @@ import saturnmap from './solarTextures/saturnmap.jpg'
 import saturnringmap from './solarTextures/saturnringcolor.jpg'
 import saturntrans from './solarTextures/saturnringpattern.gif'
 import trondbump from './solarTextures/trondheimbump.jpg'
+import getStarfield from './starfield';
 
 type Img = {src: string};
 
@@ -172,8 +173,10 @@ export default function Globe({mode, clouds, night, moon}: {mode: 'earth' | 'sat
 		});
 		const cloudPoints = new THREE.Points(new THREE.IcosahedronGeometry(1.001, detail), cloudMat);
 
-		cloudGroup.add(cloudPoints)
+		cloudGroup.add(cloudPoints);
 
+		const stars = getStarfield({ numStars: 3000 });
+		earthGroup.add(stars);
 	}
 
     if (mode === 'saturn') {
@@ -331,9 +334,6 @@ export default function Globe({mode, clouds, night, moon}: {mode: 'earth' | 'sat
 if (mode === 'trondheim') {
 
 }
-
-
-
     let rafId = 0;
     let last = performance.now();
     let frames = 0;

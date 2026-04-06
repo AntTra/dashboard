@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
+
+const CyberpunkMap = dynamic(() => import('./CyberpunkMap'), { ssr: false });
 
 // ── Cookie helpers ───────────────────────────────────────────────────────────
 
@@ -289,6 +292,8 @@ export default function BusRoutesPage() {
     return d.toTimeString().slice(0, 5);
   });
 
+  const [view,        setView]        = useState<'departures' | 'map'>('departures');
+
   const [, tick] = useState(0);
 
   // ── Departures fetch ───────────────────────────────────────────────────────
@@ -398,9 +403,39 @@ export default function BusRoutesPage() {
         </span>
       </div>
 
-      <h1 style={{ ...S.mono, fontSize: 'clamp(1.5rem, 4vw, 3rem)', letterSpacing: '-0.02em', marginBottom: '2.5rem', opacity: 0.85 }}>
-        Lerkendal
-      </h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2.5rem' }}>
+        <h1 style={{ ...S.mono, fontSize: 'clamp(1.5rem, 4vw, 3rem)', letterSpacing: '-0.02em', opacity: 0.85, margin: 0 }}>
+          Lerkendal
+        </h1>
+        <div style={{ display: 'flex', gap: '0.4rem' }}>
+          {(['departures', 'map'] as const).map(v => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              style={{
+                ...S.mono, fontSize: '0.72rem', padding: '0.25rem 0.6rem',
+                border: `1px solid ${view === v ? '#d0d0d055' : '#d0d0d018'}`,
+                borderRadius: 2,
+                background: view === v ? '#d0d0d010' : 'transparent',
+                color: view === v ? '#d0d0d0' : '#d0d0d033',
+                cursor: 'pointer', transition: 'all 0.15s',
+              }}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Map view */}
+      {view === 'map' && (
+        <div style={{ height: 'calc(100vh - 14rem)', borderRadius: 2, overflow: 'hidden', border: '1px solid #d0d0d00a' }}>
+          <CyberpunkMap />
+        </div>
+      )}
+
+      {/* Departures + planner */}
+      {view === 'departures' && <>
 
       {/* Filter — quays + lines */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '2rem' }}>
@@ -551,6 +586,8 @@ export default function BusRoutesPage() {
       <p style={{ ...S.mono, fontSize: '0.58rem', opacity: 0.1, letterSpacing: '0.08em', marginTop: '4rem' }}>
         real-time data · entur · refreshes every 30s
       </p>
+
+      </>}
 
     </main>
   );

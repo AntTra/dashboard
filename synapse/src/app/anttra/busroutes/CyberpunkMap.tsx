@@ -9,14 +9,32 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 
-// ── Stop data (positions in scene units, 1 unit ≈ 3m) ───────────────────────
+// ── GPS → Scene coordinate projection ────────────────────────────────────────
+
+const CENTER_LAT    = 63.4122;
+const CENTER_LON    = 10.3997;
+const M_PER_DEG_LAT = 111000;
+const M_PER_DEG_LON = 111000 * Math.cos(CENTER_LAT * Math.PI / 180); // ≈ 49 694
+const SCENE_SCALE   = 3; // metres per scene unit
+
+function gpsToScene(lat: number, lon: number): [number, number] {
+  return [
+    (lon - CENTER_LON) * M_PER_DEG_LON / SCENE_SCALE,
+    -(lat - CENTER_LAT) * M_PER_DEG_LAT / SCENE_SCALE,
+  ];
+}
+
+// ── Stop data (real GPS coords → scene units) ─────────────────────────────────
 
 const STOPS = [
-  { label: 'Lerkendal 1', desc: 'Holtermanns vei mot sentrum',       x:  9,  z:  2, color: 0x00ffcc },
-  { label: 'Lerkendal 2', desc: 'Holtermanns vei ut av sentrum',      x:  9,  z: -2, color: 0x00ffcc },
-  { label: 'Lerkendal 3', desc: 'Strindvegen ved gressvoll',          x: -7,  z: -6, color: 0xff0088 },
-  { label: 'Lerkendal 4', desc: 'Strindvegen ved TrønderEnergi',      x: -7,  z: -2, color: 0xff0088 },
-];
+  { label: 'Lerkendal 1', desc: 'Holtermanns vei mot sentrum',   lat: 63.411853, lon: 10.399434, color: 0x00ffcc },
+  { label: 'Lerkendal 2', desc: 'Holtermanns vei ut av sentrum', lat: 63.411740, lon: 10.399045, color: 0x00ffcc },
+  { label: 'Lerkendal 3', desc: 'Strindvegen ved gressvoll',      lat: 63.412654, lon: 10.399831, color: 0xff0088 },
+  { label: 'Lerkendal 4', desc: 'Strindvegen ved TrønderEnergi', lat: 63.412515, lon: 10.400432, color: 0xff0088 },
+].map(s => {
+  const [x, z] = gpsToScene(s.lat, s.lon);
+  return { ...s, x, z };
+});
 
 // ── Scanline + chromatic aberration shader ────────────────────────────────────
 
@@ -35,7 +53,6 @@ const BraindanceShader = {
     varying vec2 vUv;
 
     void main() {
-      // Chromatic aberration — stronger at edges
       vec2 center = vUv - 0.5;
       float dist = length(center);
       vec2 aberr = normalize(center + 0.001) * dist * 0.006;
@@ -44,21 +61,14 @@ const BraindanceShader = {
       float g = texture2D(tDiffuse, vUv).g;
       float b = texture2D(tDiffuse, vUv - aberr).b;
 
-      // Scanlines
-      float scan = sin(vUv.y * 700.0) * 0.025;
-
-      // Occasional flicker
+      float scan    = sin(vUv.y * 700.0) * 0.025;
       float flicker = sin(time * 31.0) * sin(time * 7.3) * 0.012;
-
-      // Vignette
-      float vig = smoothstep(0.85, 0.3, dist);
+      float vig     = smoothstep(0.85, 0.3, dist);
 
       vec3 col = vec3(r, g, b);
       col -= scan;
       col += flicker;
       col *= vig;
-
-      // Tint — push slightly into cyan/purple
       col.r *= 0.88;
       col.b *= 1.08;
 
@@ -81,26 +91,22 @@ function seededRand(seed: number) {
 
 function buildingMesh(rand: () => number): THREE.Group {
   const group = new THREE.Group();
-  const count = 55;
-
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < 80; i++) {
     const angle  = rand() * Math.PI * 2;
-    const radius = 6 + rand() * 22;
+    const radius = 20 + rand() * 110;
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
-    const w = 0.4 + rand() * 1.8;
-    const d = 0.4 + rand() * 1.8;
-    const h = 0.8 + rand() * 7;
+    const w = 0.5 + rand() * 2.2;
+    const d = 0.5 + rand() * 2.2;
+    const h = 1.0 + rand() * 9;
 
     const geo  = new THREE.BoxGeometry(w, h, d);
     const edges = new THREE.EdgesGeometry(geo);
-
-    const hue = rand() > 0.5 ? 0x00ffcc : 0xff0088;
-    const line = new THREE.LineSegments(
+    const hue   = rand() > 0.5 ? 0x00ffcc : 0xff0088;
+    const line  = new THREE.LineSegments(
       edges,
-      new THREE.LineBasicMaterial({ color: hue, transparent: true, opacity: 0.18 + rand() * 0.22 }),
+      new THREE.LineBasicMaterial({ color: hue, transparent: true, opacity: 0.15 + rand() * 0.2 }),
     );
-
     line.position.set(x, h / 2, z);
     group.add(line);
   }
@@ -110,13 +116,13 @@ function buildingMesh(rand: () => number): THREE.Group {
 function stopMarker(color: number): THREE.Group {
   const group = new THREE.Group();
 
-  // Vertical pillar
-  const pillarGeo = new THREE.CylinderGeometry(0.04, 0.04, 3, 6);
-  const pillar    = new THREE.Mesh(pillarGeo, new THREE.MeshBasicMaterial({ color }));
+  const pillar = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.04, 0.04, 3, 6),
+    new THREE.MeshBasicMaterial({ color }),
+  );
   pillar.position.y = 1.5;
   group.add(pillar);
 
-  // Top sphere
   const sphere = new THREE.Mesh(
     new THREE.SphereGeometry(0.15, 8, 8),
     new THREE.MeshBasicMaterial({ color }),
@@ -124,7 +130,6 @@ function stopMarker(color: number): THREE.Group {
   sphere.position.y = 3.1;
   group.add(sphere);
 
-  // Ground ring
   const ring = new THREE.Mesh(
     new THREE.RingGeometry(0.3, 0.35, 32),
     new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, transparent: true, opacity: 0.7 }),
@@ -133,7 +138,6 @@ function stopMarker(color: number): THREE.Group {
   ring.position.y = 0.01;
   group.add(ring);
 
-  // Outer pulse ring (animated separately)
   const pulse = new THREE.Mesh(
     new THREE.RingGeometry(0.5, 0.55, 32),
     new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, transparent: true, opacity: 0.4 }),
@@ -146,19 +150,64 @@ function stopMarker(color: number): THREE.Group {
   return group;
 }
 
+function busMesh(line: string, color: number): THREE.Group {
+  const group = new THREE.Group();
+
+  const body = new THREE.Mesh(
+    new THREE.SphereGeometry(0.35, 8, 8),
+    new THREE.MeshBasicMaterial({ color }),
+  );
+  group.add(body);
+
+  // Direction arrow
+  const nose = new THREE.Mesh(
+    new THREE.ConeGeometry(0.15, 0.5, 6),
+    new THREE.MeshBasicMaterial({ color }),
+  );
+  nose.rotation.x = -Math.PI / 2;
+  nose.position.z = -0.55;
+  group.add(nose);
+
+  const light = new THREE.PointLight(color, 1.2, 5);
+  group.add(light);
+
+  const div = document.createElement('div');
+  div.style.cssText = `
+    font-family: monospace;
+    font-size: 0.55rem;
+    color: #${color.toString(16).padStart(6, '0')};
+    background: rgba(0,0,0,0.7);
+    padding: 1px 5px;
+    border-radius: 1px;
+    pointer-events: none;
+    white-space: nowrap;
+    letter-spacing: 0.06em;
+  `;
+  div.textContent = line;
+  const label = new CSS2DObject(div);
+  label.position.set(0, 0.9, 0);
+  group.add(label);
+
+  return group;
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function CyberpunkMap() {
-  const mountRef  = useRef<HTMLDivElement>(null);
-  const activeRef = useRef(true);
+interface VehicleEntry { id: string; line: string; lat: number; lon: number; bearing: number; monitored: boolean }
 
+export default function CyberpunkMap() {
+  const mountRef       = useRef<HTMLDivElement>(null);
+  const activeRef      = useRef(true);
+  const sceneRef       = useRef<THREE.Scene | null>(null);
+  const vehicleMeshes  = useRef<Map<string, THREE.Group>>(new Map());
+
+  // ── Main Three.js setup ─────────────────────────────────────────────────
   useEffect(() => {
     if (!mountRef.current) return;
     activeRef.current = true;
     const mount = mountRef.current;
     const W = mount.clientWidth, H = mount.clientHeight;
 
-    // ── Renderer ───────────────────────────────────────────────────────────
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(W, H);
@@ -172,61 +221,53 @@ export default function CyberpunkMap() {
     labelRenderer.domElement.style.pointerEvents = 'none';
     mount.appendChild(labelRenderer.domElement);
 
-    // ── Scene ──────────────────────────────────────────────────────────────
-    const scene  = new THREE.Scene();
-    scene.fog    = new THREE.FogExp2(0x000814, 0.028);
+    const scene = new THREE.Scene();
+    scene.fog   = new THREE.FogExp2(0x000814, 0.004);
+    sceneRef.current = scene;
 
-    // Camera
-    const camera = new THREE.PerspectiveCamera(60, W / H, 0.1, 200);
-    camera.position.set(0, 14, 20);
+    const camera = new THREE.PerspectiveCamera(60, W / H, 0.1, 600);
+    camera.position.set(0, 110, 200);
     camera.lookAt(0, 0, 0);
 
-    // Controls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping  = true;
     controls.dampingFactor  = 0.06;
     controls.maxPolarAngle  = Math.PI / 2.05;
-    controls.minDistance    = 5;
-    controls.maxDistance    = 60;
+    controls.minDistance    = 10;
+    controls.maxDistance    = 400;
     controls.target.set(0, 0, 0);
 
-    // Ground grid
-    const grid = new THREE.GridHelper(80, 40, 0x003344, 0x001a22);
+    const grid = new THREE.GridHelper(400, 80, 0x003344, 0x001a22);
     scene.add(grid);
 
-    // Ground plane (dark, slight emissive)
     const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(80, 80),
+      new THREE.PlaneGeometry(400, 400),
       new THREE.MeshBasicMaterial({ color: 0x000610 }),
     );
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.01;
     scene.add(ground);
 
-    // Buildings
     const rand = seededRand(42);
     scene.add(buildingMesh(rand));
 
-    // Bus stop markers + CSS labels
     STOPS.forEach(stop => {
       const marker = stopMarker(stop.color);
       marker.position.set(stop.x, 0, stop.z);
       scene.add(marker);
 
-      // Point light per stop
       const light = new THREE.PointLight(stop.color, 1.5, 8);
       light.position.set(stop.x, 3, stop.z);
       scene.add(light);
 
-      // CSS2D label
       const div = document.createElement('div');
       div.style.cssText = `
         font-family: monospace;
         font-size: 0.65rem;
-        color: #${stop.color.toString(16).padStart(6,'0')};
+        color: #${stop.color.toString(16).padStart(6, '0')};
         background: rgba(0,0,0,0.7);
         padding: 2px 6px;
-        border: 1px solid #${stop.color.toString(16).padStart(6,'0')}44;
+        border: 1px solid #${stop.color.toString(16).padStart(6, '0')}44;
         border-radius: 2px;
         white-space: nowrap;
         letter-spacing: 0.08em;
@@ -235,26 +276,18 @@ export default function CyberpunkMap() {
       `;
       div.textContent = stop.label;
       const label = new CSS2DObject(div);
-      label.position.set(0, 3.8, 0);
-      scene.add(label);
-      // Position relative to stop, not marker (marker is already positioned)
       label.position.set(stop.x, 3.8, stop.z);
+      scene.add(label);
     });
 
-    // Ambient light (very dim purple)
     scene.add(new THREE.AmbientLight(0x110022, 0.5));
 
-    // ── Post-processing ────────────────────────────────────────────────────
     const composer   = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
-
-    const bloom = new UnrealBloomPass(new THREE.Vector2(W, H), 1.4, 0.6, 0.0);
-    composer.addPass(bloom);
-
+    composer.addPass(new UnrealBloomPass(new THREE.Vector2(W, H), 1.4, 0.6, 0.0));
     const braindance = new ShaderPass(BraindanceShader);
     composer.addPass(braindance);
 
-    // ── Resize ─────────────────────────────────────────────────────────────
     const onResize = () => {
       const w = mount.clientWidth, h = mount.clientHeight;
       camera.aspect = w / h;
@@ -265,24 +298,20 @@ export default function CyberpunkMap() {
     };
     window.addEventListener('resize', onResize);
 
-    // ── Animation loop ─────────────────────────────────────────────────────
     let t = 0;
     const animate = () => {
       if (!activeRef.current) return;
       requestAnimationFrame(animate);
       t += 0.016;
-
       braindance.uniforms.time.value = t;
       controls.update();
 
-      // Pulse rings
       scene.traverse(obj => {
         if (obj.userData.isPulse) {
           const scale = 1 + (Math.sin(t * 2 + obj.position.x) * 0.5 + 0.5) * 1.2;
           obj.scale.setScalar(scale);
-          (obj as THREE.Mesh).material instanceof THREE.MeshBasicMaterial &&
-            ((obj as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity !== undefined &&
-            Object.assign((obj as THREE.Mesh).material, { opacity: 0.5 - (scale - 1) * 0.25 });
+          const mat = (obj as THREE.Mesh).material as THREE.MeshBasicMaterial;
+          if (mat) mat.opacity = 0.5 - (scale - 1) * 0.25;
         }
       });
 
@@ -293,12 +322,55 @@ export default function CyberpunkMap() {
 
     return () => {
       activeRef.current = false;
+      sceneRef.current  = null;
       window.removeEventListener('resize', onResize);
       controls.dispose();
       renderer.dispose();
-      if (mount.contains(renderer.domElement))   mount.removeChild(renderer.domElement);
+      if (mount.contains(renderer.domElement))      mount.removeChild(renderer.domElement);
       if (mount.contains(labelRenderer.domElement)) mount.removeChild(labelRenderer.domElement);
+      vehicleMeshes.current.clear();
     };
+  }, []);
+
+  // ── Vehicle fetch loop ──────────────────────────────────────────────────
+  useEffect(() => {
+    const update = async () => {
+      const scene = sceneRef.current;
+      if (!scene) return;
+      try {
+        const vehicles: VehicleEntry[] = await fetch('/api/vehicles').then(r => r.json());
+        const seen = new Set<string>();
+
+        for (const v of vehicles) {
+          seen.add(v.id);
+          const [x, z] = gpsToScene(v.lat, v.lon);
+          const color = v.monitored ? 0xffdd00 : 0xff7700;
+
+          if (vehicleMeshes.current.has(v.id)) {
+            const mesh = vehicleMeshes.current.get(v.id)!;
+            mesh.position.set(x, 0.35, z);
+            mesh.rotation.y = -(v.bearing * Math.PI / 180);
+          } else {
+            const mesh = busMesh(v.line || '?', color);
+            mesh.position.set(x, 0.35, z);
+            mesh.rotation.y = -(v.bearing * Math.PI / 180);
+            scene.add(mesh);
+            vehicleMeshes.current.set(v.id, mesh);
+          }
+        }
+
+        for (const [id, mesh] of vehicleMeshes.current) {
+          if (!seen.has(id)) {
+            scene.remove(mesh);
+            vehicleMeshes.current.delete(id);
+          }
+        }
+      } catch { /* silently ignore fetch errors */ }
+    };
+
+    update();
+    const id = setInterval(update, 6_000);
+    return () => clearInterval(id);
   }, []);
 
   return (
@@ -309,8 +381,7 @@ export default function CyberpunkMap() {
       <div style={{
         position: 'absolute', inset: 0, pointerEvents: 'none',
         backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")',
-        opacity: 0.04,
-        mixBlendMode: 'overlay',
+        opacity: 0.04, mixBlendMode: 'overlay',
       }} />
 
       {/* Corner UI */}
@@ -318,11 +389,22 @@ export default function CyberpunkMap() {
         position: 'absolute', bottom: '1.2rem', left: '1.2rem',
         fontFamily: 'monospace', fontSize: '0.6rem',
         color: '#00ffcc', opacity: 0.35, letterSpacing: '0.1em',
-        textTransform: 'uppercase', lineHeight: 1.6,
-        pointerEvents: 'none',
+        textTransform: 'uppercase', lineHeight: 1.6, pointerEvents: 'none',
       }}>
         <div>lerkendal</div>
         <div style={{ color: '#ff0088' }}>trondheim · atb</div>
+      </div>
+
+      {/* Legend */}
+      <div style={{
+        position: 'absolute', bottom: '1.2rem', right: '1.2rem',
+        fontFamily: 'monospace', fontSize: '0.55rem',
+        opacity: 0.3, letterSpacing: '0.08em', lineHeight: 2,
+        pointerEvents: 'none', textAlign: 'right',
+      }}>
+        <div style={{ color: '#ffdd00' }}>● live bus</div>
+        <div style={{ color: '#ff7700' }}>● scheduled bus</div>
+        <div style={{ color: '#00ffcc' }}>● stop</div>
       </div>
     </div>
   );

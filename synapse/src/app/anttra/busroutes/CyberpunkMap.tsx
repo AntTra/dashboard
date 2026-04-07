@@ -236,7 +236,7 @@ function stopMarker(label: string, color: number): THREE.Group {
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(label.toUpperCase(), cw / 2, ch / 2);
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), depthTest: false, transparent: true }));
-  sprite.scale.set(3.5, 1.0, 1); sprite.position.set(0, 4.2, 0); group.add(sprite);
+  sprite.scale.set(3.5, 1.0, 1); sprite.position.set(0, 3.6, 0); group.add(sprite);
   return group;
 }
 

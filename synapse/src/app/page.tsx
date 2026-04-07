@@ -34,14 +34,14 @@ const stack: { label: string; owner: 'anttra' | 'dotwavs' | null }[] = [
   { label: 'TypeScript',  owner: null },
   { label: 'React',       owner: null },
   { label: 'Next.js',     owner: null },
-  { label: 'Three.js',    owner: 'dotwavs' },
-  { label: 'R3F',         owner: 'dotwavs' },
+  { label: 'Three.js',    owner: null },
+  { label: 'R3F',         owner: null },
   { label: 'Tailwind',    owner: null },
   { label: 'Python',      owner: 'anttra' },
   { label: 'OpenCV',      owner: 'anttra' },
   { label: 'NumPy',       owner: 'anttra' },
   { label: 'Base UI',     owner: null },
-  { label: 'GSAP',        owner: null },
+  { label: 'GSAP',        owner: 'dotwavs' },
 ];
 
 export default function LandingPage() {
@@ -285,8 +285,9 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-1">
             {people.map(({ handle, href, bg, accent, role }, i) => (
-              <div
+              <Link
                 key={handle}
+                href={href}
                 className="person-half relative flex flex-1 items-center justify-center overflow-hidden cursor-pointer"
                 style={{ borderTop: '1px solid #ededed10' }}
                 onMouseEnter={() => handleEnter(i)}
@@ -299,14 +300,15 @@ export default function LandingPage() {
                     pointerEvents: 'none',
                   }}
                 />
+
                 {i === 0 && (
                   <div
                     className="absolute right-0 top-0 bottom-0 w-px"
                     style={{ backgroundColor: '#ededed12', zIndex: 2 }}
                   />
                 )}
-                <Link
-                  href={href}
+
+                <div
                   className="relative flex flex-col items-center gap-3 py-24 px-8 select-none"
                   style={{ zIndex: 1 }}
                 >
@@ -316,18 +318,20 @@ export default function LandingPage() {
                   >
                     {handle}
                   </span>
+
                   <div
                     className={`person-line person-line-${i} h-px w-full`}
                     style={{ backgroundColor: accent }}
                   />
+
                   <span
                     className={`person-role-${i} font-mono text-xs tracking-widest uppercase`}
                     style={{ color: accent }}
                   >
                     {role}
                   </span>
-                </Link>
-              </div>
+                </div>
+              </Link>
             ))}
           </div>
         </section>

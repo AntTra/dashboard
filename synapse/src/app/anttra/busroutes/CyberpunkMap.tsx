@@ -7,7 +7,6 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
-import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 interface OsmData {
   buildings: { footprint: [number,number][]; height: number; type: string }[];
   roads:     { points:   [number,number][]; type: string }[];
@@ -31,16 +30,16 @@ function gpsToScene(lat: number, lon: number): [number, number] {
 }
 
 const STOPS = [
-  { label: 'Lerkendal 1',            desc: 'from city',         lat: 63.411853,           lon: 10.399434,          color: 0xaa44ff },
-  { label: 'Lerkendal 2',            desc: 'towards city',      lat: 63.411740,           lon: 10.399045,          color: 0xaa44ff },
-  { label: 'Lerkendal 3',            desc: 'towards city',      lat: 63.412654,           lon: 10.399831,          color: 0xaa44ff },
-  { label: 'Lerkendal 4',            desc: 'from city',         lat: 63.412515,           lon: 10.400432,          color: 0xaa44ff },
-  { label: 'Hesthagen',              desc: 'approaching stop',  lat: 63.416813603641200,  lon: 10.397221457580931, color: GREEN },
-  { label: 'Hesthagen',              desc: 'departing stop',    lat: 63.415498417151130,  lon: 10.398147029114945, color: RED },
-  { label: 'Valøyvegen',             desc: 'approaching stop',  lat: 63.407950831670080,  lon: 10.398137286879060, color: RED },
-  { label: 'Valøyvegen',             desc: 'departing stop',    lat: 63.409554361708760,  lon: 10.399296426408844, color: GREEN },
-  { label: 'Lerkendal gård',         desc: 'departing stop',    lat: 63.413006,           lon: 10.409538,          color: GREEN },
-  { label: 'Lerkendal gård',         desc: 'approaching stop',  lat: 63.412782,           lon: 10.407832,          color: RED },
+  { label: 'Lerkendal 1',    desc: 'from city',        lat: 63.411853,          lon: 10.399434,          color: 0xaa44ff, quayId: 'NSR:Quay:73729'  },
+  { label: 'Lerkendal 2',    desc: 'towards city',     lat: 63.411740,          lon: 10.399045,          color: 0xaa44ff, quayId: 'NSR:Quay:102720' },
+  { label: 'Lerkendal 3',    desc: 'towards city',     lat: 63.412654,          lon: 10.399831,          color: 0xaa44ff, quayId: 'NSR:Quay:73421'  },
+  { label: 'Lerkendal 4',    desc: 'from city',        lat: 63.412515,          lon: 10.400432,          color: 0xaa44ff, quayId: 'NSR:Quay:73420'  },
+  { label: 'Hesthagen',      desc: 'approaching stop', lat: 63.416813603641200, lon: 10.397221457580931, color: GREEN,    quayId: 'NSR:Quay:102719' },
+  { label: 'Hesthagen',      desc: 'departing stop',   lat: 63.415498417151130, lon: 10.398147029114945, color: RED,      quayId: 'NSR:Quay:71204'  },
+  { label: 'Valøyvegen',     desc: 'approaching stop', lat: 63.407950831670080, lon: 10.398137286879060, color: RED,      quayId: 'NSR:Quay:71982'  },
+  { label: 'Valøyvegen',     desc: 'departing stop',   lat: 63.409554361708760, lon: 10.399296426408844, color: GREEN,    quayId: 'NSR:Quay:71981'  },
+  { label: 'Lerkendal gård', desc: 'departing stop',   lat: 63.413006,          lon: 10.409538,          color: GREEN,    quayId: 'NSR:Quay:73415'  },
+  { label: 'Lerkendal gård', desc: 'approaching stop', lat: 63.412782,          lon: 10.407832,          color: RED,      quayId: 'NSR:Quay:73414'  },
   { label: 'Gløshaugen',             desc: '',  lat: 63.416835,           lon: 10.407556,          color: WHITE  },
   { label: 'Studentersamfundet', desc: '',  lat: 63.422596,           lon: 10.394623,          color: WHITE  },
   { label: 'Berg studentby',         desc: '',  lat: 63.413576,           lon: 10.414052,          color: WHITE  },
@@ -213,86 +212,101 @@ function buildingLines(
   return new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color, transparent: true, opacity }));
 }
 
-function stopMarker(color: number): THREE.Group {
+function stopMarker(label: string, color: number): THREE.Group {
   const group = new THREE.Group();
-  const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 3, 6), new THREE.MeshBasicMaterial({ color }));
-  pillar.position.y = 1.5;
-  group.add(pillar);
-  const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), new THREE.MeshBasicMaterial({ color }));
-  sphere.position.y = 3.1;
-  group.add(sphere);
-  const ring = new THREE.Mesh(new THREE.RingGeometry(0.3, 0.35, 32), new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, transparent: true, opacity: 0.7 }));
-  ring.rotation.x = -Math.PI / 2; ring.position.y = 0.01;
-  group.add(ring);
-  const pulse = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.55, 32), new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, transparent: true, opacity: 0.4 }));
-  pulse.rotation.x = -Math.PI / 2; pulse.position.y = 0.01;
-  pulse.userData.isPulse = true;
-  group.add(pulse);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.45, 0.6, 32), new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, transparent: true, opacity: 0.3 }));
+  ring.rotation.x = -Math.PI / 2; ring.position.y = 0.02; group.add(ring);
+  const pulse = new THREE.Mesh(new THREE.RingGeometry(0.7, 0.8, 32), new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, transparent: true, opacity: 0.18 }));
+  pulse.rotation.x = -Math.PI / 2; pulse.position.y = 0.01; pulse.userData.isPulse = true; group.add(pulse);
+  const beaconGeo = new THREE.BufferGeometry();
+  beaconGeo.setAttribute('position', new THREE.Float32BufferAttribute([0, 0.02, 0, 0, 2.8, 0], 3));
+  group.add(new THREE.LineSegments(beaconGeo, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.3 })));
+  const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.7 }));
+  sphere.position.y = 2.8; group.add(sphere);
+  const light = new THREE.PointLight(color, 0.4, 6);
+  light.position.y = 2.8; group.add(light);
+  const cw = 160, ch = 36;
+  const cv = document.createElement('canvas');
+  cv.width = cw; cv.height = ch;
+  const ctx = cv.getContext('2d')!;
+  ctx.fillStyle = 'rgba(0,0,0,0.85)'; ctx.fillRect(0, 0, cw, ch);
+  const hex = '#' + color.toString(16).padStart(6, '0');
+  ctx.strokeStyle = hex + '66'; ctx.lineWidth = 1.5; ctx.strokeRect(1, 1, cw - 2, ch - 2);
+  ctx.fillStyle = hex + '44'; ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(label.toUpperCase(), cw / 2, ch / 2);
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), depthTest: false, transparent: true }));
+  sprite.scale.set(3.5, 1.0, 1); sprite.position.set(0, 4.2, 0); group.add(sprite);
   return group;
 }
 
 function busMesh(line: string, color: number): THREE.Group {
   const group = new THREE.Group();
-
-  // Body — larger sphere
-  const body = new THREE.Mesh(new THREE.SphereGeometry(0.7, 10, 10), new THREE.MeshBasicMaterial({ color }));
-  body.position.y = 0.7;
-  group.add(body);
-
-  // Direction nose
-  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.9, 6), new THREE.MeshBasicMaterial({ color }));
-  nose.rotation.x = -Math.PI / 2;
-  nose.position.set(0, 0.7, -1.1);
-  group.add(nose);
-
-  // Ground ring — shows exact map position
-  const ring = new THREE.Mesh(
-    new THREE.RingGeometry(0.9, 1.05, 24),
-    new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, transparent: true, opacity: 0.6 }),
-  );
-  ring.rotation.x = -Math.PI / 2;
-  ring.position.y = 0.02;
-  group.add(ring);
-
-  // Vertical beacon line from ground to body
-  const beaconGeo = new THREE.BufferGeometry();
-  beaconGeo.setAttribute('position', new THREE.Float32BufferAttribute([0,0.02,0, 0,0.7,0], 3));
-  group.add(new THREE.LineSegments(beaconGeo, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.5 })));
-
-  // Point light
-  const light = new THREE.PointLight(color, 2.5, 12);
-  light.position.y = 0.7;
-  group.add(light);
-
-  // Sprite label
-  const cw = 112, ch = 36;
+  const cw = 128, ch = 128;
   const cv = document.createElement('canvas');
   cv.width = cw; cv.height = ch;
   const ctx = cv.getContext('2d')!;
-  ctx.fillStyle = 'rgba(0,0,0,0.85)';
-  ctx.fillRect(0, 0, cw, ch);
+  ctx.clearRect(0, 0, cw, ch);
   const hex = '#' + color.toString(16).padStart(6, '0');
-  ctx.strokeStyle = hex + '99';
-  ctx.lineWidth = 1.5;
-  ctx.strokeRect(1, 1, cw - 2, ch - 2);
-  ctx.fillStyle = hex;
-  ctx.font = 'bold 18px monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(line, cw / 2, ch / 2);
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), depthTest: false, transparent: true }));
-  sprite.scale.set(5.5, 1.75, 1);
-  sprite.position.set(0, 2.2, 0);
-  group.add(sprite);
-
+  ctx.beginPath();
+  ctx.moveTo(cw / 2, 5); ctx.lineTo(cw - 5, ch - 5); ctx.lineTo(5, ch - 5);
+  ctx.closePath();
+  ctx.fillStyle = hex + 'cc'; ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 4; ctx.stroke();
+  ctx.font = 'bold 38px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 7;
+  ctx.strokeText(line, cw / 2, ch * 0.65);
+  ctx.fillStyle = 'rgba(0,0,0,0.95)';
+  ctx.fillText(line, cw / 2, ch * 0.65);
+  const texture = new THREE.CanvasTexture(cv);
+  const triGeo = new THREE.BufferGeometry();
+  triGeo.setAttribute('position', new THREE.Float32BufferAttribute([
+     0,    0.06, -1.6,
+     0.9,  0.06,  1.0,
+    -0.9,  0.06,  1.0,
+  ], 3));
+  triGeo.setAttribute('uv', new THREE.Float32BufferAttribute([
+    0.5, 1.0, 1.0, 0.0, 0.0, 0.0,
+  ], 2));
+  triGeo.setIndex([0, 1, 2]); triGeo.computeVertexNormals();
+  group.add(new THREE.Mesh(triGeo, new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide, depthWrite: false })));
+  const light = new THREE.PointLight(color, 1.5, 7);
+  light.position.y = 0.2; group.add(light);
   return group;
 }
 
 
+function headingToNearestStop(bx: number, bz: number): number {
+  let best = STOPS[0]; let bestD = Infinity;
+  for (const s of STOPS) {
+    const d = Math.hypot(bx - s.x, bz - s.z);
+    if (d < bestD) { bestD = d; best = s; }
+  }
+  return -Math.atan2(best.x - bx, -(best.z - bz));
+}
+
+async function fetchStopDepartures(quayId: string): Promise<{ time: string; line: string; dest: string }[]> {
+  const query = `{ quay(id: "${quayId}") { estimatedCalls(numberOfDepartures: 6, timeRange: 3600) {
+    expectedDepartureTime
+    destinationDisplay { frontText }
+    serviceJourney { line { publicCode } }
+  } } }`;
+  const res = await fetch('https://api.entur.io/journey-planner/v3/graphql', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query }),
+  });
+  const json = await res.json();
+  return (json.data?.quay?.estimatedCalls ?? []).map((c: any) => ({
+    time: new Date(c.expectedDepartureTime).toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' }),
+    line: c.serviceJourney.line.publicCode,
+    dest: c.destinationDisplay.frontText,
+  }));
+}
+
 interface VehicleEntry { id: string; line: string; lat: number; lon: number; bearing: number; monitored: boolean }
 
-const VEHICLE_FILTER_LAT = 0.020;
-const VEHICLE_FILTER_LON = 0.040;
+const VEHICLE_FILTER_LAT = 0.010;
+const VEHICLE_FILTER_LON = 0.022;
 
 function xmlText(block: string, tag: string): string {
   const m = block.match(new RegExp(`<${tag}(?:\\s[^>]*)?>([^<]+)<\/${tag}>`));
@@ -300,29 +314,18 @@ function xmlText(block: string, tag: string): string {
 }
 
 async function fetchVehicles() {
-  const res = await fetch('https://api.entur.io/realtime/v1/rest/vm?datasetId=ATB', {
-    headers: { 'ET-Client-Name': 'anttra-robotics-portfolio' }
-  });
+  const res = await fetch('https://api.entur.io/realtime/v1/rest/vm?datasetId=ATB', { cache: 'no-store' });
   const xml = await res.text();
-  
   const activityRx = /<[^>]*VehicleActivity[^>]*>([\s\S]*?)<\/[^>]*VehicleActivity[^>]*>/g;
-  
   const out = [];
   let m;
-
   while ((m = activityRx.exec(xml)) !== null) {
     const block = m[1];
-    
     const lat = parseFloat(universalGet(block, 'Latitude'));
     const lon = parseFloat(universalGet(block, 'Longitude'));
-
     if (isNaN(lat) || isNaN(lon)) continue;
-
-    if (out.length === 0) console.log("First Bus Sample:", { lat, lon });
-
-    if (Math.abs(lat - CENTER_LAT) > 0.05) continue; 
-    if (Math.abs(lon - CENTER_LON) > 0.05) continue;
-
+    if (Math.abs(lat - CENTER_LAT) > VEHICLE_FILTER_LAT) continue;
+    if (Math.abs(lon - CENTER_LON) > VEHICLE_FILTER_LON) continue;
     out.push({
       id:        universalGet(block, 'VehicleMonitoringRef') || universalGet(block, 'VehicleRef'),
       line:      universalGet(block, 'PublishedLineName'),
@@ -331,12 +334,10 @@ async function fetchVehicles() {
       monitored: universalGet(block, 'Monitored').includes('true'),
     });
   }
-
-  console.log(`System Status: ${out.length} vehicles in sector.`);
   return out;
 }
 
-function universalGet(source, tag) {
+function universalGet(source: string, tag: string): string {
   const regex = new RegExp(`<[^>]*${tag}[^>]*>([\\s\\S]*?)<\\/[^>]*${tag}[^>]*>`);
   const match = source.match(regex);
   return match ? match[1].trim() : '';
@@ -353,9 +354,20 @@ export default function CyberpunkMap() {
   const activeRef     = useRef(true);
   const sceneRef      = useRef<THREE.Scene | null>(null);
   const vehicleMeshes = useRef<Map<string, THREE.Group>>(new Map());
-  const pulseMeshes    = useRef<THREE.Mesh[]>([]);
+  const pulseMeshes   = useRef<THREE.Mesh[]>([]);
+  const stopMeshes    = useRef<THREE.Group[]>([]);
   const recentArrivals = useRef<Map<string, number>>(new Map());
   const [arrivals, setArrivals] = useState<ArrivalNotif[]>([]);
+  const [busStatus, setBusStatus] = useState<{
+    state: 'idle' | 'fetching' | 'ok' | 'error';
+    count: number; loadMs: number | null; lastUpdated: string | null;
+    error: string | null; activeLines: string[];
+  }>({ state: 'idle', count: 0, loadMs: null, lastUpdated: null, error: null, activeLines: [] });
+  const [stopPanel, setStopPanel] = useState<{
+    label: string; desc: string; color: number;
+    departures: { time: string; line: string; dest: string }[];
+    loading: boolean;
+  } | null>(null);
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -368,11 +380,6 @@ export default function CyberpunkMap() {
     renderer.setSize(W, H);
     renderer.setClearColor(0x000814);
     mount.appendChild(renderer.domElement);
-
-    const labelRenderer = new CSS2DRenderer();
-    labelRenderer.setSize(W, H);
-    labelRenderer.domElement.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;';
-    mount.appendChild(labelRenderer.domElement);
 
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x000814, 0.0018);
@@ -404,31 +411,23 @@ export default function CyberpunkMap() {
 
     // Bus stop markers
     STOPS.forEach(stop => {
-      const marker = stopMarker(stop.color);
+      const marker = stopMarker(stop.label, stop.color);
       marker.position.set(stop.x, 0, stop.z);
+      marker.userData.stopLabel = stop.label;
+      marker.userData.stopDesc  = stop.desc;
+      marker.userData.stopColor = stop.color;
+      marker.userData.quayId    = (stop as any).quayId ?? null;
       marker.traverse(obj => { if (obj.userData.isPulse) pulseMeshes.current.push(obj as THREE.Mesh); });
+      stopMeshes.current.push(marker);
       scene.add(marker);
-      const light = new THREE.PointLight(stop.color, 1.5, 8);
-      light.position.set(stop.x, 3, stop.z);
-      scene.add(light);
-      const div = document.createElement('div');
-      div.style.cssText = `font-family:monospace;
-                            font-size:0.65rem;
-                            color:#${stop.color.toString(16).padStart(6,'0')};
-                            background:rgba(0,0,0,0.7);
-                            padding:2px 6px;
-                            border:1px solid #${stop.color.toString(16).padStart(6,'0')}44;
-                            border-radius:2px;
-                            white-space:nowrap;
-                            letter-spacing:0.08em;
-                            text-transform:uppercase;
-                            pointer-events:none;
-                            opacity: 0.6`;
-      div.textContent = stop.label;
-      const label = new CSS2DObject(div);
-      label.position.set(stop.x, 4.8, stop.z);
-      scene.add(label);
     });
+
+    // Dummy bus at map center for development
+    const dummyBus = busMesh('99', 0xff2200);
+    dummyBus.position.set(0, 0, 0);
+    dummyBus.userData.line = '99';
+    scene.add(dummyBus);
+    vehicleMeshes.current.set('__dummy__', dummyBus);
 
     // Generic stop markers — Points dot + instanced ground ring, 2 draw calls total
     {
@@ -469,7 +468,6 @@ export default function CyberpunkMap() {
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
-      labelRenderer.setSize(w, h);
       composer.setSize(w, h);
     };
     window.addEventListener('resize', onResize);
@@ -486,21 +484,63 @@ export default function CyberpunkMap() {
         pulse.scale.setScalar(scale);
         (pulse.material as THREE.MeshBasicMaterial).opacity = 0.5 - (scale - 1) * 0.25;
       }
+      const camDist = camera.position.length();
+      const busScale = Math.max(1, camDist / 80);
+      for (const [, group] of vehicleMeshes.current) {
+        group.scale.setScalar(busScale);
+      }
+      const stopScale = Math.max(1, camDist / 150);
+      const stopLabelBoost = Math.max(1, camDist / 300);
+      for (const group of stopMeshes.current) {
+        group.scale.setScalar(stopScale);
+        for (const child of group.children) {
+          if (child instanceof THREE.Sprite) {
+            const s = stopLabelBoost / stopScale;
+            child.scale.set(3.5 * s, 1.0 * s, 1);
+          }
+        }
+      }
       composer.render();
-      labelRenderer.render(scene, camera);
     };
     animate();
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let mouseDownX = 0, mouseDownY = 0;
+    const onMouseDown = (e: MouseEvent) => { mouseDownX = e.clientX; mouseDownY = e.clientY; };
+    const onClick = (e: MouseEvent) => {
+      if (Math.hypot(e.clientX - mouseDownX, e.clientY - mouseDownY) > 5) return;
+      const rect = mount.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const hitObjects = stopMeshes.current.flatMap(g => g.children.filter(c => c instanceof THREE.Mesh || c instanceof THREE.Sprite));
+      const hits = raycaster.intersectObjects(hitObjects);
+      if (hits.length === 0) { setStopPanel(null); return; }
+      const group = hits[0].object.parent as THREE.Group;
+      const { stopLabel, stopDesc, stopColor, quayId } = group.userData;
+      setStopPanel({ label: stopLabel, desc: stopDesc, color: stopColor, departures: [], loading: !!quayId });
+      if (quayId) {
+        fetchStopDepartures(quayId)
+          .then(deps => setStopPanel(p => p ? { ...p, loading: false, departures: deps } : null))
+          .catch(() => setStopPanel(p => p ? { ...p, loading: false } : null));
+      }
+    };
+    mount.addEventListener('mousedown', onMouseDown);
+    mount.addEventListener('click', onClick);
 
     return () => {
       activeRef.current = false;
       sceneRef.current  = null;
       window.removeEventListener('resize', onResize);
+      mount.removeEventListener('mousedown', onMouseDown);
+      mount.removeEventListener('click', onClick);
       controls.dispose();
       renderer.dispose();
-      if (mount.contains(renderer.domElement))      mount.removeChild(renderer.domElement);
-      if (mount.contains(labelRenderer.domElement)) mount.removeChild(labelRenderer.domElement);
+      if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
       vehicleMeshes.current.clear();
       pulseMeshes.current = [];
+      stopMeshes.current  = [];
     };
   }, []);
 
@@ -555,10 +595,14 @@ export default function CyberpunkMap() {
 
   useEffect(() => {
     const update = async () => {
+      if (document.hidden) return;
       const scene = sceneRef.current;
       if (!scene) return;
+      setBusStatus(s => ({ ...s, state: 'fetching' }));
+      const t0 = Date.now();
       try {
         const vehicles = await fetchVehicles();
+        const loadMs = Date.now() - t0;
         const seen = new Set<string>();
         const now  = Date.now();
         for (const v of vehicles) {
@@ -567,12 +611,14 @@ export default function CyberpunkMap() {
           const color = v.monitored ? 0xffdd00 : 0xff7700;
           if (vehicleMeshes.current.has(v.id)) {
             const mesh = vehicleMeshes.current.get(v.id)!;
-            mesh.position.set(x, 0.35, z);
-            mesh.rotation.y = -(v.bearing * Math.PI / 180);
+            mesh.position.set(x, 0, z);
+            mesh.rotation.y = headingToNearestStop(x, z);
+            mesh.userData.line = v.line;
           } else {
             const mesh = busMesh(v.line || '?', color);
-            mesh.position.set(x, 0.35, z);
-            mesh.rotation.y = -(v.bearing * Math.PI / 180);
+            mesh.position.set(x, 0, z);
+            mesh.rotation.y = headingToNearestStop(x, z);
+            mesh.userData.line = v.line;
             scene.add(mesh);
             vehicleMeshes.current.set(v.id, mesh);
           }
@@ -587,15 +633,24 @@ export default function CyberpunkMap() {
                 const nid = `${key}:${now}`;
                 const time = new Date().toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' });
                 setArrivals(prev => [...prev.slice(-4), { id: nid, stop: stop.label, desc: stop.desc, line: v.line || '?', color: stop.color, time }]);
-                setTimeout(() => setArrivals(prev => prev.filter(a => a.id !== nid)), 5_000);
               }
             }
           }
         }
         for (const [id, mesh] of vehicleMeshes.current) {
+          if (id === '__dummy__') continue;
           if (!seen.has(id)) { scene.remove(mesh); vehicleMeshes.current.delete(id); }
         }
-      } catch { /* silently ignore */ }
+        const activeLines = [...new Set(
+          [...vehicleMeshes.current.values()]
+            .map(m => m.userData.line as string)
+            .filter(Boolean)
+        )].sort();
+        const lastUpdated = new Date().toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        setBusStatus({ state: 'ok', count: vehicleMeshes.current.size, loadMs, lastUpdated, error: null, activeLines });
+      } catch (err: any) {
+        setBusStatus(s => ({ ...s, state: 'error', error: String(err?.message ?? err) }));
+      }
     };
     update();
     const id = setInterval(update, 30_000);
@@ -613,6 +668,95 @@ export default function CyberpunkMap() {
         opacity: 0.04, mixBlendMode: 'overlay',
       }} />
 
+      {/* Status panel — top left */}
+      <div style={{
+        position: 'absolute', top: '1.2rem', left: '1.2rem',
+        fontFamily: 'monospace', fontSize: '0.65rem', letterSpacing: '0.08em',
+        color: '#00ffcc', background: 'rgba(0,4,12,0.82)',
+        border: '1px solid #00ffcc33', padding: '0.5rem 0.8rem',
+        lineHeight: 1.8, pointerEvents: 'none', minWidth: '160px',
+      }}>
+        <div style={{ textTransform: 'uppercase', opacity: 0.5, marginBottom: '0.2rem' }}>lerkendal · atb</div>
+        <div>
+          <span style={{ opacity: 0.5 }}>STATE </span>
+          <span style={{ color: busStatus.state === 'ok' ? '#00ffcc' : busStatus.state === 'error' ? '#ff0088' : '#ffdd00' }}>
+            {busStatus.state.toUpperCase()}
+          </span>
+        </div>
+        <div><span style={{ opacity: 0.5 }}>BUSES </span>{busStatus.count}</div>
+        {busStatus.loadMs !== null && <div><span style={{ opacity: 0.5 }}>LAT </span>{busStatus.loadMs}ms</div>}
+        {busStatus.lastUpdated && <div><span style={{ opacity: 0.5 }}>UPD </span>{busStatus.lastUpdated}</div>}
+        {busStatus.activeLines.length > 0 && (
+          <div style={{ marginTop: '0.3rem' }}>
+            <div style={{ opacity: 0.5, marginBottom: '0.1rem' }}>LINES</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+              {busStatus.activeLines.map(l => (
+                <span key={l} style={{ background: '#ffdd0022', border: '1px solid #ffdd0055', color: '#ffdd00', padding: '0 4px' }}>{l}</span>
+              ))}
+            </div>
+          </div>
+        )}
+        {busStatus.error && <div style={{ color: '#ff0088', marginTop: '0.2rem' }}>{busStatus.error}</div>}
+      </div>
+
+      {/* Arrival table — top right */}
+      {arrivals.length > 0 && (
+        <div style={{
+          position: 'absolute', top: '1.2rem', right: '1.2rem',
+          fontFamily: 'monospace', fontSize: '0.65rem', letterSpacing: '0.07em',
+          background: 'rgba(0,4,12,0.88)', border: '1px solid #00ffcc33',
+          pointerEvents: 'none', zIndex: 10, minWidth: '260px',
+        }}>
+          <div style={{ padding: '0.3rem 0.6rem', opacity: 0.5, borderBottom: '1px solid #00ffcc22', textTransform: 'uppercase' }}>arrivals</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '3rem 2.5rem 1fr 5rem', gap: '0 0.5rem', padding: '0.2rem 0.6rem' }}>
+            {arrivals.map((a, i) => {
+              const hex = '#' + a.color.toString(16).padStart(6, '0');
+              const isNewest = i === arrivals.length - 1;
+              return (
+                <>
+                  <span key={a.id + 't'} style={{ color: '#ffffff', opacity: isNewest ? 1 : 0.6 }}>{a.time}</span>
+                  <span key={a.id + 'l'} style={{ color: '#ffdd00', opacity: isNewest ? 1 : 0.6 }}>{a.line}</span>
+                  <span key={a.id + 's'} style={{ color: hex, opacity: isNewest ? 1 : 0.6, textTransform: 'uppercase' }}>{a.stop}</span>
+                  <span key={a.id + 'd'} style={{ color: '#cce8ff', opacity: isNewest ? 0.8 : 0.4, fontSize: '0.58rem' }}>{a.desc}</span>
+                </>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Stop departure panel — bottom center */}
+      {stopPanel && (
+        <div style={{
+          position: 'absolute', bottom: '1.2rem', left: '50%', transform: 'translateX(-50%)',
+          fontFamily: 'monospace', fontSize: '0.65rem', letterSpacing: '0.07em',
+          background: 'rgba(0,4,12,0.92)', border: `1px solid #${ stopPanel.color.toString(16).padStart(6,'0') }55`,
+          minWidth: '280px', pointerEvents: 'auto', zIndex: 20,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0.7rem', borderBottom: `1px solid #${ stopPanel.color.toString(16).padStart(6,'0') }33` }}>
+            <span style={{ color: '#' + stopPanel.color.toString(16).padStart(6,'0'), textTransform: 'uppercase' }}>
+              {stopPanel.label}{stopPanel.desc ? ` · ${stopPanel.desc}` : ''}
+            </span>
+            <span style={{ cursor: 'pointer', opacity: 0.5 }} onClick={() => setStopPanel(null)}>×</span>
+          </div>
+          {stopPanel.loading ? (
+            <div style={{ padding: '0.5rem 0.7rem', opacity: 0.5 }}>loading...</div>
+          ) : stopPanel.departures.length === 0 ? (
+            <div style={{ padding: '0.5rem 0.7rem', opacity: 0.5 }}>no departures found</div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '3.5rem 2.5rem 1fr', gap: '0 0.5rem', padding: '0.35rem 0.7rem' }}>
+              {stopPanel.departures.map((d, i) => (
+                <>
+                  <span key={i + 't'} style={{ color: '#ffffff' }}>{d.time}</span>
+                  <span key={i + 'l'} style={{ color: '#ffdd00' }}>{d.line}</span>
+                  <span key={i + 'd'} style={{ color: '#cce8ff', textTransform: 'uppercase' }}>{d.dest}</span>
+                </>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Corner UI */}
       <div style={{
         position: 'absolute', bottom: '1.2rem', left: '1.2rem',
@@ -622,44 +766,6 @@ export default function CyberpunkMap() {
       }}>
         <div>lerkendal</div>
         <div style={{ color: '#ff0088' }}>trondheim · atb</div>
-      </div>
-
-      {/* Arrival popups */}
-      <div style={{
-        position: 'absolute', top: '1.2rem', right: '1.2rem',
-        display: 'flex', flexDirection: 'column', gap: '0.5rem',
-        pointerEvents: 'none', zIndex: 10,
-      }}>
-        {arrivals.map(a => {
-          const hex = '#' + a.color.toString(16).padStart(6, '0');
-          return (
-            <div key={a.id} style={{
-              fontFamily: 'monospace', fontSize: '0.7rem', letterSpacing: '0.08em',
-              background: 'rgba(0,4,12,0.88)',
-              border: `1px solid ${hex}55`,
-              borderLeft: `3px solid ${hex}`,
-              padding: '0.45rem 0.7rem',
-              color: '#cce8ff',
-              pointerEvents: 'auto',
-              display: 'flex', flexDirection: 'column', gap: '0.15rem',
-              minWidth: '180px',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
-                <span style={{ color: hex, textTransform: 'uppercase' }}>
-                  BUS {a.line} → {a.stop}
-                </span>
-                <span
-                  style={{ cursor: 'pointer', opacity: 0.5, lineHeight: 1 }}
-                  onClick={() => setArrivals(prev => prev.filter(n => n.id !== a.id))}
-                >×</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', opacity: 1, fontSize: '0.62rem', textTransform: 'uppercase' }}>
-                <span>{a.desc}</span>
-                <span style={{ color: '#ffffff' }}>{a.time}</span>
-              </div>
-            </div>
-          );
-        })}
       </div>
 
       {/* Legend */}

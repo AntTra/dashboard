@@ -7,7 +7,7 @@ const FILTER_LON = 0.040;  // ≈ 2.2 km E/W at this latitude
 
 // In-memory cache — share one Entur fetch across rapid/concurrent requests
 let cache: { ts: number; data: string } | null = null;
-const CACHE_TTL = 5_000; // ms
+const CACHE_TTL = 60_000; // ms
 
 function getText(block: string, tag: string): string {
   const m = block.match(new RegExp(`<${tag}(?:\\s[^>]*)?>([^<]+)<\/${tag}>`));

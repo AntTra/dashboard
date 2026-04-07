@@ -6,7 +6,7 @@ import Link from 'next/link';
 
 const CyberpunkMap = dynamic(() => import('./CyberpunkMap'), { ssr: false });
 
-// ── Cookie helpers ───────────────────────────────────────────────────────────
+// Cookie helpers 
 
 function makeCookieHelpers(key: string) {
   const read = (): Set<string> => {
@@ -27,7 +27,7 @@ function makeCookieHelpers(key: string) {
 const linesCookie = makeCookieHelpers('busroutes_hidden_lines');
 const quaysCookie = makeCookieHelpers('busroutes_hidden_quays');
 
-// ── Constants ────────────────────────────────────────────────────────────────
+// Constants 
 
 const GQL = 'https://api.entur.io/journey-planner/v3/graphql';
 const GEO = 'https://api.entur.io/geocoder/v1/autocomplete';
@@ -85,7 +85,7 @@ query Trip($from: Location!, $to: Location!, $dateTime: DateTime, $arriveBy: Boo
   }
 }`;
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// Types
 
 interface Call {
   expectedDepartureTime: string;
@@ -109,7 +109,7 @@ interface Leg {
 }
 interface TripPattern { duration: number; legs: Leg[] }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// Helpers
 
 const minsUntil  = (iso: string) => Math.round((new Date(iso).getTime() - Date.now()) / 60000);
 const delayMins  = (c: Call)     => Math.round((new Date(c.expectedDepartureTime).getTime() - new Date(c.aimedDepartureTime).getTime()) / 60000);
@@ -120,7 +120,7 @@ const S: Record<string, React.CSSProperties> = {
   mono: { fontFamily: 'monospace' },
 };
 
-// ── Sub-components ───────────────────────────────────────────────────────────
+// Sub-components
 
 function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
@@ -169,12 +169,12 @@ function QuayPanel({ label, quay, hidden }: { label: string; quay: QuayData; hid
   const visible = quay.estimatedCalls.filter(c => minsUntil(c.expectedDepartureTime) >= 0 && !hidden.has(c.serviceJourney.line.publicCode));
   return (
     <div style={{ flex: 1, minWidth: 220 }}>
-      <p style={{ ...S.mono, fontSize: '0.62rem', opacity: 0.28, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
+      <p style={{ ...S.mono, fontSize: '0.62rem', opacity: 0.68, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
         Lerkendal {label}
       </p>
-      <p style={{ ...S.mono, fontSize: '0.68rem', opacity: 0.18, marginBottom: '1.2rem' }}>{quay.description}</p>
+      <p style={{ ...S.mono, fontSize: '0.68rem', opacity: 0.58, marginBottom: '1.2rem' }}>{quay.description}</p>
       {visible.length === 0
-        ? <p style={{ ...S.mono, fontSize: '0.72rem', opacity: 0.18 }}>no departures</p>
+        ? <p style={{ ...S.mono, fontSize: '0.72rem', opacity: 0.38 }}>no departures</p>
         : quay.estimatedCalls.map((c, i) => (
             <DepartureRow key={i} call={c} hidden={hidden.has(c.serviceJourney.line.publicCode)} />
           ))
@@ -260,7 +260,7 @@ function TripResult({ pattern }: { pattern: TripPattern }) {
   );
 }
 
-// ── Page ─────────────────────────────────────────────────────────────────────
+// Page
 
 export default function BusRoutesPage() {
   // Departures
@@ -287,16 +287,17 @@ export default function BusRoutesPage() {
   const [tripErr,     setTripErr]     = useState(false);
   const [toSlideOpen, setToSlideOpen] = useState(false);
   const [arriveBy,    setArriveBy]    = useState(false);
-  const [arriveTime,  setArriveTime]  = useState(() => {
+  const [arriveTime,  setArriveTime]  = useState('12:00');
+  useEffect(() => {
     const d = new Date(); d.setMinutes(d.getMinutes() + 30);
-    return d.toTimeString().slice(0, 5);
-  });
+    setArriveTime(d.toTimeString().slice(0, 5));
+  }, []);
 
   const [view,        setView]        = useState<'departures' | 'map'>('departures');
 
   const [, tick] = useState(0);
 
-  // ── Departures fetch ───────────────────────────────────────────────────────
+  // Departures fetch
   const fetchDepartures = useCallback(async () => {
     try {
       const res  = await fetch(GQL, { method: 'POST', headers: HEADERS, body: JSON.stringify({ query: DEPARTURES_QUERY }) });
@@ -318,7 +319,7 @@ export default function BusRoutesPage() {
     return () => clearInterval(id);
   }, []);
 
-  // ── Autocomplete ───────────────────────────────────────────────────────────
+  // Autocomplete
   const searchStop = useCallback(async (q: string, set: (s: Suggestion[]) => void) => {
     if (q.length < 2) { set([]); return; }
     try {
@@ -340,7 +341,7 @@ export default function BusRoutesPage() {
     return () => clearTimeout(t);
   }, [toQuery, toStop, searchStop]);
 
-  // ── Trip search ────────────────────────────────────────────────────────────
+  // Trip search
   const searchTrip = useCallback(async () => {
     if (!fromStop || !toStop) return;
     setTripLoading(true);
@@ -370,7 +371,7 @@ export default function BusRoutesPage() {
     if (fromStop && toStop) searchTrip();
   }, [fromStop, toStop, arriveBy, arriveTime, searchTrip]);
 
-  // ── Unique line codes for filter ───────────────────────────────────────────
+  // Unique line codes for filter
   const allLines = data
     ? [...new Set([...data.quay1.estimatedCalls, ...data.quay2.estimatedCalls, ...data.quay3.estimatedCalls, ...data.quay4.estimatedCalls].map(c => c.serviceJourney.line.publicCode))].sort()
     : [];
@@ -391,15 +392,15 @@ export default function BusRoutesPage() {
       return n;
     });
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // Render 
   return (
     <main style={{ backgroundColor: '#040404', color: '#d0d0d0', minHeight: '100vh', padding: 'clamp(2rem, 5vw, 4rem) clamp(1.5rem, 6vw, 5rem)' }}>
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3rem' }}>
-        <Link href="/anttra" style={{ ...S.mono, fontSize: '0.7rem', opacity: 0.2, color: '#d0d0d0' }}>← anttra</Link>
-        <span style={{ ...S.mono, fontSize: '0.62rem', opacity: 0.15 }}>
-          {lastUpdated ? `updated ${lastUpdated.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` : ''}
+        <Link href="/anttra" style={{ ...S.mono, fontSize: '0.7rem', opacity: 0.4, color: '#d0d0d0' }}>← anttra</Link>
+        <span style={{ ...S.mono, fontSize: '0.62rem', opacity: 0.85 }}>
+          {lastUpdated ? `Last updated ${lastUpdated.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` : ''}
         </span>
       </div>
 
@@ -414,10 +415,10 @@ export default function BusRoutesPage() {
               onClick={() => setView(v)}
               style={{
                 ...S.mono, fontSize: '0.72rem', padding: '0.25rem 0.6rem',
-                border: `1px solid ${view === v ? '#d0d0d055' : '#d0d0d018'}`,
+                border: `1px solid ${view === v ? '#d0d0d055' : '#d0d0d03b'}`,
                 borderRadius: 2,
                 background: view === v ? '#d0d0d010' : 'transparent',
-                color: view === v ? '#d0d0d0' : '#d0d0d033',
+                color: view === v ? '#d0d0d0' : '#d0d0d0a6',
                 cursor: 'pointer', transition: 'all 0.15s',
               }}
             >
@@ -429,7 +430,7 @@ export default function BusRoutesPage() {
 
       {/* Map view */}
       {view === 'map' && (
-        <div style={{ height: 'calc(100vh - 14rem)', borderRadius: 2, overflow: 'hidden', border: '1px solid #d0d0d00a' }}>
+        <div style={{ height: 'calc(100vh - 14rem)', borderRadius: 2, overflow: 'hidden', border: '1px solid #d0d0d01e' }}>
           <CyberpunkMap />
         </div>
       )}
@@ -447,7 +448,7 @@ export default function BusRoutesPage() {
         </div>
         {allLines.length > 0 && (
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <span style={{ ...S.mono, fontSize: '0.6rem', opacity: 0.25, minWidth: '2.5rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>lines</span>
+            <span style={{ ...S.mono, fontSize: '0.6rem', opacity: 0.55, minWidth: '2.5rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>lines</span>
             {allLines.map(code => (
               <Chip key={code} label={code} active={!hidden.has(code)} onClick={() => toggleLine(code)} />
             ))}
@@ -456,7 +457,7 @@ export default function BusRoutesPage() {
       </div>
 
       {/* Departures — hidden while planning */}
-      {fetchErr && <p style={{ ...S.mono, fontSize: '0.75rem', opacity: 0.3 }}>could not reach entur</p>}
+      {fetchErr && <p style={{ ...S.mono, fontSize: '0.75rem', opacity: 0.5 }}>could not reach entur</p>}
       {!data && !fetchErr && <p style={{ ...S.mono, fontSize: '0.75rem', opacity: 0.2 }}>fetching...</p>}
 
       <div style={{
@@ -484,7 +485,7 @@ export default function BusRoutesPage() {
 
       {/* Journey planner */}
       <div style={{ maxWidth: 560 }}>
-        <p style={{ ...S.mono, fontSize: '0.62rem', opacity: 0.28, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '1.2rem' }}>
+        <p style={{ ...S.mono, fontSize: '0.62rem', opacity: 0.58, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '1.2rem' }}>
           plan journey
         </p>
 

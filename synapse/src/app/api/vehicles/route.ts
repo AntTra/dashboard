@@ -2,8 +2,12 @@ import { NextResponse } from 'next/server';
 
 const CENTER_LAT = 63.4122;
 const CENTER_LON = 10.3997;
-const FILTER_LAT = 0.013;  // ≈ 1.4 km N/S
-const FILTER_LON = 0.027;  // ≈ 1.4 km E/W at this latitude
+const FILTER_LAT = 0.020;  // ≈ 2.2 km N/S
+const FILTER_LON = 0.040;  // ≈ 2.2 km E/W at this latitude
+
+// In-memory cache — share one Entur fetch across rapid/concurrent requests
+let cache: { ts: number; data: string } | null = null;
+const CACHE_TTL = 5_000; // ms
 
 function getText(block: string, tag: string): string {
   const m = block.match(new RegExp(`<${tag}(?:\\s[^>]*)?>([^<]+)<\/${tag}>`));
@@ -12,14 +16,21 @@ function getText(block: string, tag: string): string {
 
 export async function GET() {
   try {
-    const res = await fetch(
-      'https://api.entur.io/realtime/v1/rest/vm?datasetId=ATB',
-      {
-        headers: { 'ET-Client-Name': 'synapse-anttra-busroutes' },
-        cache: 'no-store',
-      },
-    );
-    const xml = await res.text();
+    let xml: string;
+    const now = Date.now();
+    if (cache && now - cache.ts < CACHE_TTL) {
+      xml = cache.data;
+    } else {
+      const res = await fetch(
+        'https://api.entur.io/realtime/v1/rest/vm?datasetId=ATB',
+        {
+          headers: { 'ET-Client-Name': 'synapse-anttra-busroutes' },
+          cache: 'no-store',
+        },
+      );
+      xml = await res.text();
+      cache = { ts: now, data: xml };
+    }
 
     const vehicles: {
       id: string;

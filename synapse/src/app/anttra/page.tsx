@@ -1,60 +1,131 @@
+'use client';
+
+import { useRef } from 'react';
 import Link from 'next/link';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
 
 const projects = [
-  { name: 'globe',      desc: 'solar system viewer',              href: '/anttra/globe', live: true  },
-  { name: 'busroutes',  desc: 'real-time transit api',            href: '/anttra/busroutes', live: true  },
-  { name: 'armvision',  desc: 'robot arm via hand gesture + opencv', href: null,         live: false },
+  { name: 'Globe', desc: 'solar system viewer', href: '/anttra/globe', live: true },
+  { name: 'Busroutes', desc: 'real-time transit api', href: '/anttra/busroutes', live: true },
+  { name: 'Landmark controller', desc: 'robot arm via hand gesture + opencv', href: '#', live: false },
 ];
 
 export default function AnttraPage() {
-  return (
-    <main
-      style={{ backgroundColor: '#040404', color: '#d0d0d0', minHeight: '100vh' }}
-      className="flex flex-col px-12 md:px-24 py-16 gap-16"
-    >
-      <Link href="/" className="font-mono text-xs" style={{ opacity: 0.2, color: '#d0d0d0' }}>
-        ← synapse
-      </Link>
+  const container = useRef(null);
 
-      <div className="flex flex-col gap-3">
-        <h1 className="font-mono" style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)', letterSpacing: '-0.02em' }}>
+  useGSAP(() => {
+    const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
+
+    // 1. Initial "Boot" sequence
+    tl.from(".nav-item", { opacity: 0, y: -10, duration: 1 })
+      .from(".main-title", { 
+        opacity: 0, 
+        x: -30, 
+        filter: "blur(10px)", 
+        duration: 1.5 
+      }, "-=0.5")
+      .from(".sub-text", { 
+        width: 0, 
+        opacity: 0, 
+        duration: 1, 
+        stagger: 0.2 
+      }, "-=1")
+      .from(".project-row", {
+        opacity: 0,
+        y: 20,
+        stagger: 0.1,
+        duration: 0.8,
+        borderTopColor: "transparent"
+      }, "-=0.8")
+      .from(".footer-link", { opacity: 0, duration: 1 }, "-=0.5");
+  }, { scope: container });
+
+  return (
+    <main 
+      ref={container}
+      className="relative min-h-screen bg-[#040404] text-[#d0d0d0] px-8 md:px-24 py-16 selection:bg-white selection:text-black overflow-hidden"
+    >
+      {/* Background Tech Layer */}
+      <div className="fixed inset-0 pointer-events-none opacity-[0.02] overflow-hidden font-mono text-[10px]">
+        {Array.from({ length: 20 }).map((_, i) => (
+          <div key={i} className="whitespace-nowrap leading-none mb-2">
+            {Math.random().toString(36).repeat(10)}
+          </div>
+        ))}
+      </div>
+
+      <nav className="nav-item relative z-10">
+        <Link href="/" className="font-mono text-[10px] tracking-[0.3em] opacity-50 hover:opacity-100 transition-opacity">
+          ← return
+        </Link>
+      </nav>
+
+      <header className="mt-24 mb-32 relative z-10">
+        <h1 className="main-title font-mono font-light leading-none tracking-tighter" style={{ fontSize: 'clamp(3rem, 15vw, 10rem)' }}>
           anttra
         </h1>
-        <p className="font-mono text-sm" style={{ opacity: 0.3 }}>cybernetics & robotics engineer</p>
+        <div className="flex items-center gap-4 mt-4 overflow-hidden">
+          <div className="sub-text h-[1px] bg-white/20 w-12" />
+          <p className="sub-text font-mono text-[10px] uppercase tracking-[0.15em] opacity-50">
+            Cybernetics & Robotics
+          </p>
+        </div>
+      </header>
+
+      <div className="relative z-10 max-w-5xl">
+        {projects.map((proj, i) => (
+          <ProjectRow key={i} {...proj} />
+        ))}
+        <div className="project-row h-[1px] w-full bg-white/10" />
       </div>
 
-      <div className="flex flex-col">
-        {projects.map(({ name, desc, href, live }) => {
-          const inner = (
-            <div
-              className="flex justify-between items-baseline gap-8 py-5"
-              style={{ borderTop: '1px solid #d0d0d00f' }}
-            >
-              <span className="font-mono" style={{ fontSize: 'clamp(1rem, 2.5vw, 1.4rem)', opacity: live ? 0.7 : 0.25 }}>
-                {name}
-              </span>
-              <span className="font-mono text-xs" style={{ opacity: 0.15, letterSpacing: '0.06em', flex: 1, textAlign: 'right' }}>
-                {desc}
-              </span>
-              <span className="font-mono text-xs" style={{ opacity: 0.15 }}>
-                {live ? '→' : 'soon'}
-              </span>
-            </div>
-          );
-          return live && href
-            ? <Link key={name} href={href} style={{ color: '#d0d0d0', textDecoration: 'none' }}>{inner}</Link>
-            : <div key={name}>{inner}</div>;
-        })}
-        <div style={{ borderTop: '1px solid #d0d0d00f' }} />
-      </div>
-
-      <Link
-        href="/anttra/void"
-        className="font-mono text-xs self-start"
-        style={{ opacity: 0.1, color: '#d0d0d0', letterSpacing: '0.12em' }}
-      >
-        ∅
-      </Link>
+      <footer className="footer-link mt-32 relative z-10">
+        <Link href="/anttra/void" className="font-mono text-[10px] opacity-20 hover:opacity-100 hover:tracking-[0.5em] transition-all duration-700">
+          [VOID_SEGMENT]
+        </Link>
+      </footer>
     </main>
   );
+}
+
+function ProjectRow({ name, desc, href, live }) {
+  const rowRef = useRef(null);
+
+  const onMouseEnter = () => {
+    if (!live) return;
+    gsap.to(rowRef.current, { backgroundColor: "rgba(255,255,255,0.03)", x: 10, duration: 0.4, ease: "power2.out" });
+    gsap.to(`.name-${name}`, { x: 10, opacity: 1, duration: 0.4 });
+    gsap.to(`.desc-${name}`, { opacity: 0.6, duration: 0.4 });
+  };
+
+  const onMouseLeave = () => {
+    if (!live) return;
+    gsap.to(rowRef.current, { backgroundColor: "transparent", x: 0, duration: 0.4 });
+    gsap.to(`.name-${name}`, { x: 0, opacity: 0.7, duration: 0.4 });
+    gsap.to(`.desc-${name}`, { opacity: 0, duration: 0.4 });
+  };
+
+  const content = (
+    <div 
+      ref={rowRef}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      className="project-row flex justify-between items-baseline py-8 border-t border-white/10 cursor-pointer transition-colors"
+    >
+      <div className="flex flex-col md:flex-row md:items-baseline gap-4 md:gap-12">
+        <span className={`name-${name} font-mono text-2xl md:text-3xl transition-opacity ${live ? 'opacity-70' : 'opacity-20'}`}>
+          {name}
+        </span>
+        <span className={`desc-${name} font-mono text-[10px] uppercase tracking-widest opacity-0 hidden md:block`}>
+          {desc}
+        </span>
+      </div>
+      <span className="font-mono text-[10px] opacity-20">
+        {live ? '' : 'Not Ready'}
+      </span>
+    </div>
+  );
+
+  return live ? <Link href={href}>{content}</Link> : content;
 }

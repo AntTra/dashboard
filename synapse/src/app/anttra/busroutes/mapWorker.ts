@@ -1,5 +1,5 @@
 // Runs off the main thread — no Three.js, pure math + typed arrays
-
+const ctx: Worker   = self as any;
 const CENTER_LAT    = 63.4122;
 const CENTER_LON    = 10.3997;
 const M_PER_DEG_LAT = 111000;
@@ -83,5 +83,5 @@ self.onmessage = (e: MessageEvent<{ buildings: OsmBuilding[]; roads: OsmRoad[] }
     ...residF.map(f => f.buffer),
   ];
 
-  self.postMessage({ bright, mid, dim, civic: civicF, resid: residF }, transferables);
+  ctx.postMessage({ bright, mid, dim, civic: civicF, resid: residF }, transferables);
 };

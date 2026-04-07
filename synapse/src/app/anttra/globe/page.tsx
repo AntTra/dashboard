@@ -22,9 +22,9 @@ export default function Page() {
     <div className="w-full h-screen flex">
       <div className="w-64 border-r border-zinc-800 p-3">
         <Accordion.Root
+          type="multiple"
           value={openValues}
-          onValueChange={(vals) => setOpenValues((vals as string[]) ?? [])}
-          openMultiple={false}
+          onValueChange={(vals) => setOpenValues(vals ?? [])}
           orientation="vertical"
           className="space-y-2"
         >
@@ -119,18 +119,6 @@ export default function Page() {
             </Accordion.Header>
             <Accordion.Panel className="px-3 py-2 text-sm text-zinc-400">
               
-            </Accordion.Panel>
-          </Accordion.Item>
-
-          {/* TRONDHEIM */}
-          <Accordion.Item value="trondheim" className="border-b border-zinc-800 pb-2">
-            <Accordion.Header>
-              <Accordion.Trigger className="w-full px-3 py-2 text-left hover:bg-zinc-800 rounded">
-                Trondheim
-              </Accordion.Trigger>
-            </Accordion.Header>
-            <Accordion.Panel className="px-3 py-2 text-sm text-zinc-400">
-              Cyberpunk style
             </Accordion.Panel>
           </Accordion.Item>
         </Accordion.Root>

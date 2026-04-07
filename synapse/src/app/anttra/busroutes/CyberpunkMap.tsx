@@ -19,6 +19,10 @@ const M_PER_DEG_LAT = 111000;
 const M_PER_DEG_LON = 111000 * Math.cos(CENTER_LAT * Math.PI / 180);
 const SCENE_SCALE   = 3; // metres per scene unit
 
+const RED = 0xff0088;
+const GREEN = 0x00ffcc;
+const WHITE = 0xffffff;
+
 function gpsToScene(lat: number, lon: number): [number, number] {
   return [
     (lon - CENTER_LON) * M_PER_DEG_LON / SCENE_SCALE,
@@ -27,31 +31,50 @@ function gpsToScene(lat: number, lon: number): [number, number] {
 }
 
 const STOPS = [
-  { label: 'Lerkendal 1', desc: 'Holtermanns vei mot sentrum',   lat: 63.411853,          lon: 10.399434,          color: 0x2e5bff },
-  { label: 'Lerkendal 2', desc: 'Holtermanns vei ut av sentrum', lat: 63.411740,           lon: 10.399045,          color: 0xffb300 },
-  { label: 'Lerkendal 3', desc: 'Strindvegen ved gressvoll',      lat: 63.412654,           lon: 10.399831,          color: 0xffb300 },
-  { label: 'Lerkendal 4', desc: 'Strindvegen ved TrønderEnergi', lat: 63.412515,           lon: 10.400432,          color: 0x2e5bff },
-  { label: 'Hesthagen',   desc: 'mot sentrum',                    lat: 63.416813603641200,  lon: 10.397221457580931, color: 0x00ffcc },
-  { label: 'Hesthagen',   desc: 'ut av sentrum',                  lat: 63.415498417151130,  lon: 10.398147029114945, color: 0xff0088 },
-  { label: 'Valøyvegen',    desc: 'sørover',          lat: 63.407950831670080, lon: 10.398137286879060, color: 0xff0088 },
-  { label: 'Valøyvegen',    desc: 'nordover',         lat: 63.409554361708760, lon: 10.399296426408844, color: 0x00ffcc },
-  { label: 'Lerkendal gård', desc: 'mot sentrum',     lat: 63.413006,          lon: 10.409538,          color: 0xaa44ff },
-  { label: 'Lerkendal gård', desc: 'ut av sentrum',   lat: 63.412782,          lon: 10.407832,          color: 0xaa44ff },
+  { label: 'Lerkendal 1',            desc: 'from city',         lat: 63.411853,           lon: 10.399434,          color: 0xaa44ff },
+  { label: 'Lerkendal 2',            desc: 'towards city',      lat: 63.411740,           lon: 10.399045,          color: 0xaa44ff },
+  { label: 'Lerkendal 3',            desc: 'towards city',      lat: 63.412654,           lon: 10.399831,          color: 0xaa44ff },
+  { label: 'Lerkendal 4',            desc: 'from city',         lat: 63.412515,           lon: 10.400432,          color: 0xaa44ff },
+  { label: 'Hesthagen',              desc: 'approaching stop',  lat: 63.416813603641200,  lon: 10.397221457580931, color: GREEN },
+  { label: 'Hesthagen',              desc: 'departing stop',    lat: 63.415498417151130,  lon: 10.398147029114945, color: RED },
+  { label: 'Valøyvegen',             desc: 'approaching stop',  lat: 63.407950831670080,  lon: 10.398137286879060, color: RED },
+  { label: 'Valøyvegen',             desc: 'departing stop',    lat: 63.409554361708760,  lon: 10.399296426408844, color: GREEN },
+  { label: 'Lerkendal gård',         desc: 'departing stop',    lat: 63.413006,           lon: 10.409538,          color: GREEN },
+  { label: 'Lerkendal gård',         desc: 'approaching stop',  lat: 63.412782,           lon: 10.407832,          color: RED },
+  { label: 'Gløshaugen',             desc: '',  lat: 63.416835,           lon: 10.407556,          color: WHITE  },
+  { label: 'Studentersamfundet', desc: '',  lat: 63.422596,           lon: 10.394623,          color: WHITE  },
+  { label: 'Berg studentby',         desc: '',  lat: 63.413576,           lon: 10.414052,          color: WHITE  },
+  { label: 'Karl Jonssons veg',     desc: '', lat: 63.401536, lon: 10.408706, color: WHITE },
+  { label: 'Anton Grevskotts veg',  desc: '', lat: 63.403484, lon: 10.406089, color: WHITE },
+  { label: 'Sorgenfri',             desc: '', lat: 63.407686, lon: 10.403809, color: WHITE },
+  { label: 'Høgskoleringen',        desc: '', lat: 63.420867, lon: 10.404181, color: WHITE },
+  { label: 'St. Olavs hospital',    desc: '', lat: 63.420757, lon: 10.390046, color: WHITE },
+  { label: 'Bratsbergvegen',        desc: '', lat: 63.405387, lon: 10.397457, color: WHITE },
+  { label: 'Siemens',               desc: '', lat: 63.403719, lon: 10.398836, color: WHITE },
+  { label: 'Nyveibakken',           desc: '', lat: 63.423966, lon: 10.371359, color: WHITE },
+  { label: 'Tvetestien',            desc: '', lat: 63.417785, lon: 10.372038, color: WHITE },
+  { label: 'Marienborg stasjon',    desc: '', lat: 63.418056, lon: 10.382563, color: WHITE },
+  { label: 'Thaulowbakken',         desc: '', lat: 63.412656, lon: 10.382222, color: WHITE },
+  { label: 'Breidablikk',       desc: '', lat: 63.412383, lon: 10.376708, color: WHITE },
+  { label: 'Gudruns gate',          desc: '', lat: 63.425210, lon: 10.382784, color: WHITE },
+  { label: 'Ankers gate',           desc: '', lat: 63.424860, lon: 10.416855, color: WHITE },
+  { label: 'Strinda vgs.',          desc: '', lat: 63.422046, lon: 10.427611, color: WHITE },
+  { label: 'Nardosenteret',         desc: '', lat: 63.403569, lon: 10.426994, color: WHITE },
+  { label: 'Nardokrysset',          desc: '', lat: 63.406960, lon: 10.423778, color: WHITE },
+  { label: 'Sollia',                desc: '', lat: 63.399244, lon: 10.428297, color: WHITE },
+  { label: 'E-verket',              desc: '', lat: 63.398881, lon: 10.401320, color: WHITE },
+  { label: 'Nidarvoll skole',       desc: '', lat: 63.399155, lon: 10.404734, color: WHITE },
+  { label: 'Valgrindvegen',         desc: '', lat: 63.409468, lon: 10.402859, color: WHITE },
+  { label: 'Tempevegen 11',         desc: '', lat: 63.407804, lon: 10.396690, color: WHITE },
+  { label: 'Sluppen',               desc: '', lat: 63.401921, lon: 10.395796, color: WHITE },
+  { label: 'Trondheim hovedbrannstasjon', desc: '', lat: 63.399245, lon: 10.392889, color: WHITE },
+  { label: 'Hoem',                  desc: '', lat: 63.405573, lon: 10.382777, color: WHITE },
+  { label: 'Rognheim',              desc: '', lat: 63.399670, lon: 10.371500, color: WHITE },
 ].map(s => { const [x, z] = gpsToScene(s.lat, s.lon); return { ...s, x, z }; });
 
 // All other OSM bus stops
 
 const EXTRA_STOPS = ([
-  { name: 'Dybdahls veg',                  lat: 63.412757, lon: 10.414908 },
-  { name: 'Dybdahls veg',                  lat: 63.412955, lon: 10.413803 },
-  { name: 'Gløshaugen',                    lat: 63.416835, lon: 10.407556 },
-  { name: 'Gløshaugen',                    lat: 63.416499, lon: 10.407687 },
-  { name: 'Studentersamfundet (1)',         lat: 63.422596, lon: 10.394623 },
-  { name: 'Studentersamfundet (2)',         lat: 63.422222, lon: 10.394384 },
-  { name: 'Studentersamfundet (3)',         lat: 63.422790, lon: 10.395173 },
-  { name: 'Studentersamfundet (4)',         lat: 63.422665, lon: 10.395227 },
-  { name: 'Berg studentby',                lat: 63.413576, lon: 10.414052 },
-  { name: 'Berg studentby',                lat: 63.413529, lon: 10.416951 },
   { name: 'Karl Jonssons veg',             lat: 63.401536, lon: 10.408706 },
   { name: 'Karl Jonssons veg',             lat: 63.401403, lon: 10.408626 },
   { name: 'Anton Grevskotts veg',          lat: 63.403484, lon: 10.406089 },
@@ -74,7 +97,7 @@ const EXTRA_STOPS = ([
   { name: 'Tvetestien',                    lat: 63.418174, lon: 10.372813 },
   { name: 'Marienborg stasjon',            lat: 63.418056, lon: 10.382563 },
   { name: 'Marienborg stasjon',            lat: 63.417816, lon: 10.382431 },
-  { name: 'Marienborg stasjon (3)',         lat: 63.418820, lon: 10.382110 },
+  { name: 'Marienborg stasjon (3)',        lat: 63.418820, lon: 10.382110 },
   { name: 'Marienborg',                    lat: 63.420000, lon: 10.377220 },
   { name: 'Marienborg',                    lat: 63.419179, lon: 10.377574 },
   { name: 'Thaulowbakken',                 lat: 63.412656, lon: 10.382222 },
@@ -389,7 +412,18 @@ export default function CyberpunkMap() {
       light.position.set(stop.x, 3, stop.z);
       scene.add(light);
       const div = document.createElement('div');
-      div.style.cssText = `font-family:monospace;font-size:0.65rem;color:#${stop.color.toString(16).padStart(6,'0')};background:rgba(0,0,0,0.7);padding:2px 6px;border:1px solid #${stop.color.toString(16).padStart(6,'0')}44;border-radius:2px;white-space:nowrap;letter-spacing:0.08em;text-transform:uppercase;pointer-events:none;`;
+      div.style.cssText = `font-family:monospace;
+                            font-size:0.65rem;
+                            color:#${stop.color.toString(16).padStart(6,'0')};
+                            background:rgba(0,0,0,0.7);
+                            padding:2px 6px;
+                            border:1px solid #${stop.color.toString(16).padStart(6,'0')}44;
+                            border-radius:2px;
+                            white-space:nowrap;
+                            letter-spacing:0.08em;
+                            text-transform:uppercase;
+                            pointer-events:none;
+                            opacity: 0.6`;
       div.textContent = stop.label;
       const label = new CSS2DObject(div);
       label.position.set(stop.x, 4.8, stop.z);
@@ -502,8 +536,8 @@ export default function CyberpunkMap() {
           addLines(dim,    0x003322, true,  0.25);
 
           // Buildings 16 civic tiles + 16 resid tiles 
-          for (const buf of civic) addLines(buf, 0x00ccff, true, 0.68);
-          for (const buf of resid) addLines(buf, 0x397520, true, 0.34);
+          for (const buf of civic) addLines(buf, RED, true, 0.28);
+          for (const buf of resid) addLines(buf, 0x006666, true, 0.54);
 
           worker?.terminate();
           worker = null;
@@ -553,7 +587,7 @@ export default function CyberpunkMap() {
                 const nid = `${key}:${now}`;
                 const time = new Date().toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' });
                 setArrivals(prev => [...prev.slice(-4), { id: nid, stop: stop.label, desc: stop.desc, line: v.line || '?', color: stop.color, time }]);
-                setTimeout(() => setArrivals(prev => prev.filter(a => a.id !== nid)), 4_000);
+                setTimeout(() => setArrivals(prev => prev.filter(a => a.id !== nid)), 5_000);
               }
             }
           }
@@ -564,7 +598,7 @@ export default function CyberpunkMap() {
       } catch { /* silently ignore */ }
     };
     update();
-    const id = setInterval(update, 18_000);
+    const id = setInterval(update, 30_000);
     return () => clearInterval(id);
   }, []);
 
@@ -632,7 +666,7 @@ export default function CyberpunkMap() {
       <div style={{
         position: 'absolute', bottom: '1.2rem', right: '1.2rem',
         fontFamily: 'monospace', fontSize: '1.0rem',
-        opacity: 0.65, letterSpacing: '0.08em', lineHeight: 2,
+        opacity: 0.55, letterSpacing: '0.08em', lineHeight: 2,
         pointerEvents: 'none', textAlign: 'right',
       }}>
         <div style={{ color: '#ffdd00' }}>● live bus</div>

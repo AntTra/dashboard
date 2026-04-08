@@ -240,7 +240,7 @@ function stopMarker(label: string, color: number): THREE.Group {
   return group;
 }
 
-function busMesh(line: string, color: number): THREE.Group {
+function busMarker(line: string, color: number): THREE.Group {
   const group = new THREE.Group();
   const cw = 128, ch = 128;
   const cv = document.createElement('canvas');
@@ -248,30 +248,54 @@ function busMesh(line: string, color: number): THREE.Group {
   const ctx = cv.getContext('2d')!;
   ctx.clearRect(0, 0, cw, ch);
   const hex = '#' + color.toString(16).padStart(6, '0');
+  
   ctx.beginPath();
-  ctx.moveTo(cw / 2, 5); ctx.lineTo(cw - 5, ch - 5); ctx.lineTo(5, ch - 5);
+  ctx.moveTo(cw / 2, 2); 
+  ctx.lineTo(cw - 2, ch - 2); 
+  ctx.lineTo(2, ch - 2);
   ctx.closePath();
-  ctx.fillStyle = hex + 'cc'; ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 4; ctx.stroke();
-  ctx.font = 'bold 38px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 7;
-  ctx.strokeText(line, cw / 2, ch * 0.65);
-  ctx.fillStyle = 'rgba(0,0,0,0.95)';
-  ctx.fillText(line, cw / 2, ch * 0.65);
+  
+  ctx.fillStyle = hex + 'dd'; 
+  ctx.fill();
+  
+  ctx.font = 'bold 44px monospace'; 
+  ctx.textAlign = 'center'; 
+  ctx.textBaseline = 'middle';
+  
+  const textY = ch * 0.68;
+  ctx.strokeStyle = 'rgba(0, 0, 0, 1)'; 
+  ctx.lineWidth = 3;
+  ctx.strokeText(line, cw / 2, textY);
+  ctx.fillStyle = '#000000';
+  ctx.fillText(line, cw / 2, textY);
+  
   const texture = new THREE.CanvasTexture(cv);
   const triGeo = new THREE.BufferGeometry();
+  
   triGeo.setAttribute('position', new THREE.Float32BufferAttribute([
-     0,    0.06, -1.6,
-     0.9,  0.06,  1.0,
-    -0.9,  0.06,  1.0,
+     0,    0.06, -3.5,
+     2.0,  0.06,  2.2,
+    -2.0,  0.06,  2.2,
   ], 3));
+  
   triGeo.setAttribute('uv', new THREE.Float32BufferAttribute([
-    0.5, 1.0, 1.0, 0.0, 0.0, 0.0,
+    0.5, 1.0, 
+    1.0, 0.0, 
+    0.0, 0.0,
   ], 2));
-  triGeo.setIndex([0, 1, 2]); triGeo.computeVertexNormals();
-  group.add(new THREE.Mesh(triGeo, new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide, depthWrite: false })));
-  const light = new THREE.PointLight(color, 1.5, 7);
-  light.position.y = 0.2; group.add(light);
+  
+  triGeo.setIndex([0, 1, 2]); 
+  triGeo.computeVertexNormals();
+  
+  const mesh = new THREE.Mesh(triGeo, new THREE.MeshBasicMaterial({ 
+    map: texture, 
+    transparent: true, 
+    opacity: 0.4, 
+    side: THREE.DoubleSide, 
+    depthWrite: false 
+  }));
+  
+  group.add(mesh);
   return group;
 }
 
@@ -423,7 +447,7 @@ export default function CyberpunkMap() {
     });
 
     // Dummy bus at map center for development
-    const dummyBus = busMesh('99', 0xff2200);
+    const dummyBus = busMarker('99', 0x8b0000);
     dummyBus.position.set(0, 0, 0);
     dummyBus.userData.line = '99';
     scene.add(dummyBus);
@@ -459,7 +483,7 @@ export default function CyberpunkMap() {
 
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
-    composer.addPass(new UnrealBloomPass(new THREE.Vector2(W, H), 1.4, 0.6, 0.0));
+    composer.addPass(new UnrealBloomPass(new THREE.Vector2(W, H), 1.3, 0.4, 0.0));
     const braindance = new ShaderPass(BraindanceShader);
     composer.addPass(braindance);
 
@@ -485,12 +509,12 @@ export default function CyberpunkMap() {
         (pulse.material as THREE.MeshBasicMaterial).opacity = 0.5 - (scale - 1) * 0.25;
       }
       const camDist = camera.position.length();
-      const busScale = Math.max(1, camDist / 80);
+      const busScale = Math.max(1.5, camDist / 100);
       for (const [, group] of vehicleMeshes.current) {
         group.scale.setScalar(busScale);
       }
-      const stopScale = Math.max(1, camDist / 150);
-      const stopLabelBoost = Math.max(1, camDist / 300);
+      const stopScale = Math.max(1, camDist / 80);
+      const stopLabelBoost = Math.max(1, camDist / 120);
       for (const group of stopMeshes.current) {
         group.scale.setScalar(stopScale);
         for (const child of group.children) {
@@ -577,7 +601,7 @@ export default function CyberpunkMap() {
 
           // Buildings 16 civic tiles + 16 resid tiles 
           for (const buf of civic) addLines(buf, RED, true, 0.28);
-          for (const buf of resid) addLines(buf, 0x006666, true, 0.54);
+          for (const buf of resid) addLines(buf, 0x006666, true, 0.64);
 
           worker?.terminate();
           worker = null;
@@ -615,7 +639,7 @@ export default function CyberpunkMap() {
             mesh.rotation.y = headingToNearestStop(x, z);
             mesh.userData.line = v.line;
           } else {
-            const mesh = busMesh(v.line || '?', color);
+            const mesh = busMarker(v.line || '?', color);
             mesh.position.set(x, 0, z);
             mesh.rotation.y = headingToNearestStop(x, z);
             mesh.userData.line = v.line;

@@ -7,7 +7,7 @@ import { CheckboxGroup } from '@base-ui-components/react/checkbox-group';
 import CheckIcon from '@mui/icons-material/Check';
 import Globe from './components/globe';
 
-export default function Page() {
+export default function GlobePage() {
   // Accordion state (single open)
   const [openValues, setOpenValues] = React.useState<string[]>(['earth']);
   const planet = (openValues[0] ?? 'earth') as 'earth' | 'saturn' | 'trondheim';
@@ -22,7 +22,6 @@ export default function Page() {
     <div className="w-full h-screen flex">
       <div className="w-64 border-r border-zinc-800 p-3">
         <Accordion.Root
-          type="multiple"
           value={openValues}
           onValueChange={(vals) => setOpenValues(vals ?? [])}
           orientation="vertical"

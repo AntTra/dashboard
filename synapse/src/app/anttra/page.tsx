@@ -6,6 +6,7 @@ import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 
 const projects = [
+  { name: 'CV', desc: "a little bit of what I've done", href: '/anttra/CV', live: true },
   { name: 'Globe', desc: 'solar system viewer', href: '/anttra/globe', live: true },
   { name: 'Busroutes', desc: 'real-time transit api', href: '/anttra/busroutes', live: true },
   { name: 'Landmark controller', desc: 'robot arm via hand gesture + opencv', href: '#', live: false },
@@ -89,7 +90,7 @@ export default function AnttraPage() {
   );
 }
 
-function ProjectRow({ name, desc, href, live }) {
+function ProjectRow({ name, desc, href, live }: { name: string; desc: string; href: string; live: boolean }) {
   const rowRef = useRef(null);
 
   const onMouseEnter = () => {

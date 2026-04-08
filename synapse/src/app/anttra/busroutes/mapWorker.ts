@@ -83,5 +83,5 @@ self.onmessage = (e: MessageEvent<{ buildings: OsmBuilding[]; roads: OsmRoad[] }
     ...residF.map(f => f.buffer),
   ];
 
-  ctx.postMessage({ bright, mid, dim, civic: civicF, resid: residF }, transferables);
+  ctx.postMessage({ bright, mid, dim, civic: civicF, resid: residF }, { transfer: transferables });
 };

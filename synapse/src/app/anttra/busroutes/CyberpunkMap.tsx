@@ -20,7 +20,7 @@ const SCENE_SCALE   = 3; // metres per scene unit
 
 const RED = 0xff0088;
 const GREEN = 0x00ffcc;
-const WHITE = 0xffffff;
+const WHITE = 0x989898;
 
 function gpsToScene(lat: number, lon: number): [number, number] {
   return [
@@ -225,14 +225,14 @@ function stopMarker(label: string, color: number): THREE.Group {
   sphere.position.y = 2.8; group.add(sphere);
   const light = new THREE.PointLight(color, 0.4, 6);
   light.position.y = 2.8; group.add(light);
-  const cw = 160, ch = 36;
+  const cw = 200, ch = 44;
   const cv = document.createElement('canvas');
   cv.width = cw; cv.height = ch;
   const ctx = cv.getContext('2d')!;
   ctx.fillStyle = 'rgba(0,0,0,0.85)'; ctx.fillRect(0, 0, cw, ch);
   const hex = '#' + color.toString(16).padStart(6, '0');
   ctx.strokeStyle = hex + '66'; ctx.lineWidth = 1.5; ctx.strokeRect(1, 1, cw - 2, ch - 2);
-  ctx.fillStyle = hex + '44'; ctx.font = 'bold 14px monospace';
+  ctx.fillStyle = hex + '33'; ctx.font = 'bold 16px monospace';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(label.toUpperCase(), cw / 2, ch / 2);
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), depthTest: false, transparent: true }));
@@ -258,13 +258,13 @@ function busMarker(line: string, color: number): THREE.Group {
   ctx.fillStyle = hex + 'dd'; 
   ctx.fill();
   
-  ctx.font = 'bold 44px monospace'; 
+  ctx.font = '50px monospace'; 
   ctx.textAlign = 'center'; 
   ctx.textBaseline = 'middle';
   
-  const textY = ch * 0.68;
+  const textY = ch * 0.8;
   ctx.strokeStyle = 'rgba(0, 0, 0, 1)'; 
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 5;
   ctx.strokeText(line, cw / 2, textY);
   ctx.fillStyle = '#000000';
   ctx.fillText(line, cw / 2, textY);
@@ -290,7 +290,7 @@ function busMarker(line: string, color: number): THREE.Group {
   const mesh = new THREE.Mesh(triGeo, new THREE.MeshBasicMaterial({ 
     map: texture, 
     transparent: true, 
-    opacity: 0.4, 
+    opacity: 0.8, 
     side: THREE.DoubleSide, 
     depthWrite: false 
   }));
@@ -415,9 +415,9 @@ export default function CyberpunkMap() {
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true; controls.dampingFactor = 0.06;
-    controls.enablePan = false;
+    controls.enablePan = true; controls.screenSpacePanning = true;
     controls.maxPolarAngle = Math.PI / 2.05;
-    controls.minDistance = 0; controls.maxDistance = 500;
+    controls.maxDistance = 500;
     controls.target.set(0, 0, 0);
 
     // Ground
@@ -447,7 +447,7 @@ export default function CyberpunkMap() {
     });
 
     // Dummy bus at map center for development
-    const dummyBus = busMarker('99', 0x8b0000);
+    const dummyBus = busMarker('99', 0x4c0000);
     dummyBus.position.set(0, 0, 0);
     dummyBus.userData.line = '99';
     scene.add(dummyBus);
@@ -514,7 +514,7 @@ export default function CyberpunkMap() {
         group.scale.setScalar(busScale);
       }
       const stopScale = Math.max(1, camDist / 80);
-      const stopLabelBoost = Math.max(1, camDist / 120);
+      const stopLabelBoost = Math.max(1, camDist / 100);
       for (const group of stopMeshes.current) {
         group.scale.setScalar(stopScale);
         for (const child of group.children) {
@@ -601,7 +601,7 @@ export default function CyberpunkMap() {
 
           // Buildings 16 civic tiles + 16 resid tiles 
           for (const buf of civic) addLines(buf, RED, true, 0.28);
-          for (const buf of resid) addLines(buf, 0x006666, true, 0.64);
+          for (const buf of resid) addLines(buf, 0x006666, true, 0.5);
 
           worker?.terminate();
           worker = null;
@@ -632,7 +632,7 @@ export default function CyberpunkMap() {
         for (const v of vehicles) {
           seen.add(v.id);
           const [x, z] = gpsToScene(v.lat, v.lon);
-          const color = v.monitored ? 0xffdd00 : 0xff7700;
+          const color = v.monitored ? 0x4c0000 : 0xff7700;
           if (vehicleMeshes.current.has(v.id)) {
             const mesh = vehicleMeshes.current.get(v.id)!;
             mesh.position.set(x, 0, z);
@@ -677,7 +677,7 @@ export default function CyberpunkMap() {
       }
     };
     update();
-    const id = setInterval(update, 30_000);
+    const id = setInterval(update, 25_000);
     return () => clearInterval(id);
   }, []);
 
@@ -687,9 +687,13 @@ export default function CyberpunkMap() {
 
       {/* Noise grain */}
       <div style={{
-        position: 'absolute', inset: 0, pointerEvents: 'none',
-        backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")',
-        opacity: 0.04, mixBlendMode: 'overlay',
+        position: 'absolute', 
+        inset: 0, 
+        pointerEvents: 'none',
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+        opacity: 0.2, 
+        mixBlendMode: 'overlay',
+        zIndex: 20 
       }} />
 
       {/* Status panel — top left */}
@@ -724,7 +728,7 @@ export default function CyberpunkMap() {
       </div>
 
       {/* Arrival table — top right */}
-      {arrivals.length > 0 && (
+      {arrivals.length >= 0 && (
         <div style={{
           position: 'absolute', top: '1.2rem', right: '1.2rem',
           fontFamily: 'monospace', fontSize: '0.65rem', letterSpacing: '0.07em',

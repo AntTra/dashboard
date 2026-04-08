@@ -392,12 +392,11 @@ export default function BusRoutesPage() {
       return n;
     });
 
-  // Render 
   return (
-    <main style={{ backgroundColor: '#040404', color: '#d0d0d0', minHeight: '100vh', padding: 'clamp(2rem, 5vw, 4rem) clamp(1.5rem, 6vw, 5rem)' }}>
+    <main style={{ backgroundColor: '#040404', color: '#d0d0d0', minHeight: '100vh', padding: 'clamp(2rem, 5vw, 3rem) clamp(1.5rem, 6vw, 5rem)' }}>
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
         <Link href="/anttra" style={{ ...S.mono, fontSize: '0.7rem', opacity: 0.4, color: '#d0d0d0' }}>← anttra</Link>
         <span style={{ ...S.mono, fontSize: '0.62rem', opacity: 0.85 }}>
           {lastUpdated ? `Last updated ${lastUpdated.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` : ''}
@@ -430,7 +429,7 @@ export default function BusRoutesPage() {
 
       {/* Map view */}
       {view === 'map' && (
-        <div style={{ height: 'calc(100vh - 14rem)', borderRadius: 2, overflow: 'hidden', border: '1px solid #d0d0d01e' }}>
+        <div style={{ height: 'calc(100vh - 17rem)', borderRadius: 1, overflow: 'hidden', border: '1px solid #d0d0d01e' }}>
           <CyberpunkMap />
         </div>
       )}
@@ -441,7 +440,7 @@ export default function BusRoutesPage() {
       {/* Filter — quays + lines */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '2rem' }}>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ ...S.mono, fontSize: '0.6rem', opacity: 0.25, minWidth: '4.5rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Lerkendal</span>
+          <span style={{ ...S.mono, fontSize: '0.6rem', opacity: 0.35, minWidth: '4.5rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Lerkendal</span>
           {['1','2','3','4'].map(q => (
             <Chip key={q} label={q} active={!hiddenQuays.has(q)} onClick={() => toggleQuay(q)} />
           ))}
@@ -481,7 +480,7 @@ export default function BusRoutesPage() {
       </div>
 
       {/* Divider */}
-      <div style={{ height: '1px', background: 'linear-gradient(to right, #c77dff22, #00e5a022)', margin: '0 0 2rem' }} />
+      <div style={{ height: '1px', background: 'linear-gradient(to right, #c77dff22, #00e5a022)', margin: '1rem 0 3rem' }} />
 
       {/* Journey planner */}
       <div style={{ maxWidth: 560 }}>
@@ -584,8 +583,8 @@ export default function BusRoutesPage() {
         </div>
       </div>
 
-      <p style={{ ...S.mono, fontSize: '0.58rem', opacity: 0.1, letterSpacing: '0.08em', marginTop: '4rem' }}>
-        real-time data · entur · refreshes every 30s
+      <p style={{ ...S.mono, fontSize: '0.58rem', opacity: 0.4, letterSpacing: '0.08em', marginTop: '4rem' }}>
+        real-time data · entur · refreshes every 25s
       </p>
 
       </>}

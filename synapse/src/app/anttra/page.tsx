@@ -6,9 +6,9 @@ import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 
 const projects = [
-  { name: 'CV', desc: "a little bit of what I've done", href: '/anttra/CV', live: true },
-  { name: 'Globe', desc: 'solar system viewer', href: '/anttra/globe', live: true },
-  { name: 'Busroutes', desc: 'real-time transit api', href: '/anttra/busroutes', live: true },
+  { name: 'CV', desc: "a little bit 'bout what I've done", href: '/anttra/cv', live: true },
+  { name: 'Vertex globes', desc: 'globe viewer', href: '/anttra/globe', live: true },
+  { name: 'Busroutes - Trondheim', desc: 'real-time transit api in Trondheim', href: '/anttra/busroutes', live: true },
   { name: 'Landmark controller', desc: 'robot arm via hand gesture + opencv', href: '#', live: false },
 ];
 
@@ -91,34 +91,36 @@ export default function AnttraPage() {
 }
 
 function ProjectRow({ name, desc, href, live }: { name: string; desc: string; href: string; live: boolean }) {
-  const rowRef = useRef(null);
+  const rowRef  = useRef(null);
+  const nameRef = useRef(null);
+  const descRef = useRef(null);
 
   const onMouseEnter = () => {
     if (!live) return;
-    gsap.to(rowRef.current, { backgroundColor: "rgba(255,255,255,0.03)", x: 10, duration: 0.4, ease: "power2.out" });
-    gsap.to(`.name-${name}`, { x: 10, opacity: 1, duration: 0.4 });
-    gsap.to(`.desc-${name}`, { opacity: 0.6, duration: 0.4 });
+    gsap.to(rowRef.current,  { backgroundColor: "rgba(255,255,255,0.03)", x: 10, duration: 0.4, ease: "power2.out" });
+    gsap.to(nameRef.current, { x: 10, opacity: 1, duration: 0.4 });
+    gsap.to(descRef.current, { opacity: 0.6, duration: 0.4 });
   };
 
   const onMouseLeave = () => {
     if (!live) return;
-    gsap.to(rowRef.current, { backgroundColor: "transparent", x: 0, duration: 0.4 });
-    gsap.to(`.name-${name}`, { x: 0, opacity: 0.7, duration: 0.4 });
-    gsap.to(`.desc-${name}`, { opacity: 0, duration: 0.4 });
+    gsap.to(rowRef.current,  { backgroundColor: "transparent", x: 0, duration: 0.4 });
+    gsap.to(nameRef.current, { x: 0, opacity: 0.7, duration: 0.4 });
+    gsap.to(descRef.current, { opacity: 0, duration: 0.4 });
   };
 
   const content = (
-    <div 
+    <div
       ref={rowRef}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       className="project-row flex justify-between items-baseline py-8 border-t border-white/10 cursor-pointer transition-colors"
     >
       <div className="flex flex-col md:flex-row md:items-baseline gap-4 md:gap-12">
-        <span className={`name-${name} font-mono text-2xl md:text-3xl transition-opacity ${live ? 'opacity-70' : 'opacity-20'}`}>
+        <span ref={nameRef} className={`font-mono text-2xl md:text-3xl transition-opacity ${live ? 'opacity-70' : 'opacity-20'}`}>
           {name}
         </span>
-        <span className={`desc-${name} font-mono text-[10px] uppercase tracking-widest opacity-0 hidden md:block`}>
+        <span ref={descRef} className="font-mono text-[10px] uppercase tracking-widest opacity-0 hidden md:block">
           {desc}
         </span>
       </div>

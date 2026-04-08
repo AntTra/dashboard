@@ -19,7 +19,6 @@ import moonmap from './solarTextures/moonmap1k.jpg'
 import saturnmap from './solarTextures/saturnmap.jpg'
 import saturnringmap from './solarTextures/saturnringcolor.jpg'
 import saturntrans from './solarTextures/saturnringpattern.gif'
-import trondbump from './solarTextures/trondheimbump.jpg'
 import getStarfield from './starfield';
 
 type Img = {src: string};
@@ -27,6 +26,7 @@ type Img = {src: string};
 export default function Globe({mode, clouds, night, moon}: {mode: 'earth' | 'saturn' | 'trondheim'; clouds: boolean; night: boolean; moon: boolean; }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const [fps, setFps] = useState(0);
+  let earthMat: THREE.ShaderMaterial;
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -61,6 +61,7 @@ export default function Globe({mode, clouds, night, moon}: {mode: 'earth' | 'sat
     // Controls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
+	controls.minDistance = 1.5;
 
     // Loader
     const loader = new THREE.TextureLoader();
@@ -93,10 +94,12 @@ export default function Globe({mode, clouds, night, moon}: {mode: 'earth' | 'sat
 	  const vertexShader = `
         uniform float size;
         uniform float elev;
+		uniform float cameraDistance;
         uniform sampler2D elevTexture;
         varying vec2 vUv;
         varying float vVisible;
-				uniform float thresh;
+		uniform float thresh;
+
         void main() {
           vUv = uv;
           vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
@@ -104,8 +107,10 @@ export default function Globe({mode, clouds, night, moon}: {mode: 'earth' | 'sat
           vec3 vNormal = normalMatrix * normal;
           vVisible = step(thresh, dot(-normalize(mvPosition.xyz), normalize(vNormal)));
           mvPosition.z += elev * elv;
-          gl_PointSize = size;
-          gl_Position = projectionMatrix * mvPosition;
+
+		  float dist = -mvPosition.z;
+		  gl_PointSize = size * (4.0 / (dist + 0.1));
+		  gl_Position = projectionMatrix * mvPosition;
         }
       `;
       const fragmentShader = `
@@ -121,11 +126,12 @@ export default function Globe({mode, clouds, night, moon}: {mode: 'earth' | 'sat
           gl_FragColor = vec4(color, alpha);
         }
       `;
-      const earthMat = new THREE.ShaderMaterial({
+      earthMat = new THREE.ShaderMaterial({
 			uniforms: {
 				size: {value: 2.0},
 				elev: {value: 0.2},
 				thresh: {value: 0},
+				cameraDistance: { value: 3.0 },
 				colorTexture: {value: map},
 				elevTexture: {value: bumpMap},
 				alphaTexture: {value: specMap},
@@ -331,9 +337,6 @@ export default function Globe({mode, clouds, night, moon}: {mode: 'earth' | 'sat
 		saturnGroup.userData.updateAtm = updateAtm;
     }
 
-if (mode === 'trondheim') {
-
-}
     let rafId = 0;
     let last = performance.now();
     let frames = 0;
@@ -354,12 +357,15 @@ if (mode === 'trondheim') {
 			accTime = 0;
 		}
 
+		const dist = camera.position.length();
+
 		if (mode === 'earth') {
-			earthGroup.rotateY(0.001);
-			earthGroup.rotateX(-0.0001);
-			cloudGroup.rotateY(0.0012)
-			cloudGroup.rotateX(-0.00012);
-			moonGroup.rotateY(-0.002);
+			earthMat.uniforms.cameraDistance.value = dist;
+			earthGroup.rotateY(0.0001);
+			earthGroup.rotateX(-0.00001);
+			cloudGroup.rotateY(0.00052)
+			cloudGroup.rotateX(-0.000052);
+			moonGroup.rotateY(-0.001);
 		} else {
 			saturnGroup.rotateY(0.001);
 			if (saturnGroup.userData.updateAtm) saturnGroup.userData.updateAtm();

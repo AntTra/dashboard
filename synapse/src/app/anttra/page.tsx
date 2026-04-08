@@ -1,15 +1,17 @@
 'use client';
 
-import { useRef } from 'react';
 import Link from 'next/link';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
+import { useEffect, useRef, useState } from 'react';
 
 const projects = [
   { name: 'CV', desc: "a little bit 'bout what I've done", href: '/anttra/cv', live: true },
   { name: 'Vertex globes', desc: 'globe viewer', href: '/anttra/globe', live: true },
   { name: 'Busroutes - Trondheim', desc: 'real-time transit api in Trondheim', href: '/anttra/busroutes', live: true },
-  { name: 'Landmark controller', desc: 'hand tracking + liquid glass', href: '/anttra/landmark', live: true },
+  { name: 'VOID', desc: 'face melter', href: '/anttra/void', live: false },
+  { name: 'Master thesis notes', desc: 'documentation of my master thesis', href: '/anttra/master', live: false },
+  { name: 'Landmark controller', desc: 'hand tracking + liquid glass', href: '/anttra/landmark', live: false },
 ];
 
 export default function AnttraPage() {
@@ -41,6 +43,14 @@ export default function AnttraPage() {
       }, "-=0.8")
       .from(".footer-link", { opacity: 0, duration: 1 }, "-=0.5");
   }, { scope: container });
+  const [rows, setRows] = useState<string[]>([]);
+
+  useEffect(() => {
+    const generated = Array.from({ length: 20 }).map(() =>
+      Math.random().toString(36).repeat(10)
+    );
+    setRows(generated);
+  }, []);
 
   return (
     <main 
@@ -49,9 +59,9 @@ export default function AnttraPage() {
     >
       {/* Background Tech Layer */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.02] overflow-hidden font-mono text-[10px]">
-        {Array.from({ length: 20 }).map((_, i) => (
+        {rows.map((row, i) => (
           <div key={i} className="whitespace-nowrap leading-none mb-2">
-            {Math.random().toString(36).repeat(10)}
+            {row}
           </div>
         ))}
       </div>
@@ -96,17 +106,17 @@ function ProjectRow({ name, desc, href, live }: { name: string; desc: string; hr
   const descRef = useRef(null);
 
   const onMouseEnter = () => {
+    gsap.to(descRef.current, { opacity: 0.6, duration: 0.4 });
     if (!live) return;
     gsap.to(rowRef.current,  { backgroundColor: "rgba(255,255,255,0.03)", x: 10, duration: 0.4, ease: "power2.out" });
     gsap.to(nameRef.current, { x: 10, opacity: 1, duration: 0.4 });
-    gsap.to(descRef.current, { opacity: 0.6, duration: 0.4 });
   };
 
   const onMouseLeave = () => {
+    gsap.to(descRef.current, { opacity: 0, duration: 0.4 });
     if (!live) return;
     gsap.to(rowRef.current,  { backgroundColor: "transparent", x: 0, duration: 0.4 });
     gsap.to(nameRef.current, { x: 0, opacity: 0.7, duration: 0.4 });
-    gsap.to(descRef.current, { opacity: 0, duration: 0.4 });
   };
 
   const content = (

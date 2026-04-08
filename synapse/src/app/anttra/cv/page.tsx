@@ -35,10 +35,10 @@ const DATA = {
   email: 'anton.tran@live.no',    
   summary:
     'Engineer focused on real-time data systems and 3D visualisation. ' +
-    'I build things that move while I myself dont move' +
+    'I build things that move while I myself dont move. ' +
     'Based in Trondheim, studying rocks at NTNU.',
   skills: [
-    { category: 'Languages',  items: ['TypeScript', 'Python', 'Rust', 'C++'] },
+    { category: 'Languages',  items: ['C++', 'TypeScript', 'Python', 'Rust'] },
     { category: 'Frontend',   items: ['React', 'Next.js', 'Three.js', 'WebGL'] },
     { category: 'Tools',      items: ['Git', 'Docker', 'Vercel', 'Ubuntu'] },
   ],
@@ -47,18 +47,31 @@ const DATA = {
       company: 'KSAT',
       role: 'Summer intern',
       period: '2025',
-      points: ['Software developer, still feeling proud of giving tutorials to an employee there:D'],
+      points: ['Software developer', 'still feeling proud of giving tutorials to an employee there:D'],
     },
   ],
   education: [
-    { school: 'NTNU', degree: 'Your Degree', year: '20XX' },
+    { school: 'NTNU', degree: 'Cybernetics Master', year: '2027' },
+    { school: 'NTNU', degree: 'Geology Bachelor', year: '2026' },
   ],
   projects: [
     {
       name: 'Project: Synapse',
-      tech: ['Three.js', 'Next.js', 'Entur SIRI VM'],
-      desc: "3D rendering of wojak globes, Real-time(when is it ever?) 3D cyberpunk transit map of Trondheim. Live bus positions(when my IP address doesn't get locked out), stop departures, arrival notifications.",
+      tech: ['Three.js', 'Next.js', 'Entur SIRI VM', 'IP banned'],
+      desc: "3D rendering of wojak globes. Real-time(when is it ever?) 3D cyberpunk transit map of Trondheim. Live bus positions(when my IP address doesn't get locked out), stop departures, arrival notifications.",
+      href: '/anttra/',
+    },
+    {
+      name: 'Landmark measurements fusing with ESKF for drift correction',
+      tech: ['ROS2', 'C++', 'Perception','Getting humbled'],
+      desc: "Beginner friendly task(according to my boss)",
       href: '/anttra/busroutes',
+    },
+    {
+      name: 'Project: Beer',
+      tech: ['Hydrometer', 'Fermenter', 'Good mood'],
+      desc: 'Getting drunk',
+      href: 'https://rusinfo.no/trenger_du_hjelp/hjelp-a-slutte-alkohol/',
     },
   ],
 };
@@ -154,7 +167,7 @@ export default function CVPage() {
           {/* Photo — GitHub avatar */}
           {photoSrc && (
             <img src={photoSrc} alt="profile"
-              style={{ width: 90, height: 90, objectFit: 'cover' as const, border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }} />
+              style={{ width: 130, height: 130, objectFit: 'cover' as const, border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }} />
           )}
 
           {/* Name */}

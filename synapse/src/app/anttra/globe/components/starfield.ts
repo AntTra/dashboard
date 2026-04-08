@@ -40,7 +40,7 @@ export default function getStarfield({ numStars = 5000 } = {}) {
   const star = loader.load((starSprite as unknown as Img).src);
 
   const mat = new THREE.PointsMaterial({
-    size: 200,
+    size: 0.2,
     vertexColors: true,
     map: star,
   });

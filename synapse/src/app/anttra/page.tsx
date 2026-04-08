@@ -9,7 +9,7 @@ const projects = [
   { name: 'CV', desc: "a little bit 'bout what I've done", href: '/anttra/cv', live: true },
   { name: 'Vertex globes', desc: 'globe viewer', href: '/anttra/globe', live: true },
   { name: 'Busroutes - Trondheim', desc: 'real-time transit api in Trondheim', href: '/anttra/busroutes', live: true },
-  { name: 'Landmark controller', desc: 'robot arm via hand gesture + opencv', href: '#', live: false },
+  { name: 'Landmark controller', desc: 'hand tracking + liquid glass', href: '/anttra/landmark', live: true },
 ];
 
 export default function AnttraPage() {

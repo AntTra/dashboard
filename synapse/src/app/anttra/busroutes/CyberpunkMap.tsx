@@ -656,7 +656,7 @@ export default function CyberpunkMap() {
                 recentArrivals.current.set(key, now);
                 const nid = `${key}:${now}`;
                 const time = new Date().toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' });
-                setArrivals(prev => [...prev.slice(-4), { id: nid, stop: stop.label, desc: stop.desc, line: v.line || '?', color: stop.color, time }]);
+                setArrivals(prev => [...prev.slice(-9), { id: nid, stop: stop.label, desc: stop.desc, line: v.line || '?', color: stop.color, time }]);
               }
             }
           }
@@ -714,25 +714,25 @@ export default function CyberpunkMap() {
         {busStatus.loadMs !== null && <div><span style={{ opacity: 0.5 }}>LOAD </span>{busStatus.loadMs}ms</div>}
         {busStatus.lastUpdated && <div><span style={{ opacity: 0.5 }}>UPD </span>{busStatus.lastUpdated}</div>}
         {busStatus.activeLines.length > 0 && (
-<div style={{ marginTop: '0.3rem' }}>
-  <div style={{ opacity: 0.5, marginBottom: '0.1rem' }}>LINES</div>
-  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
-    {busStatus.activeLines.map(l => (
-      <span
-        key={l}
-        style={{
-          flex: '0 1 auto',
-          background: '#ffdd0022',
-          border: '1px solid #ffdd0055',
-          color: '#ffdd00',
-          padding: '0 4px'
-        }}
-      >
-        {l}
-      </span>
-    ))}
-  </div>
-</div>
+        <div style={{ marginTop: '0.3rem' }}>
+          <div style={{ opacity: 0.5, marginBottom: '0.1rem' }}>LINES</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+            {busStatus.activeLines.map(l => (
+              <span
+                key={l}
+                style={{
+                  flex: '0 1 auto',
+                  background: '#ffdd0022',
+                  border: '1px solid #ffdd0055',
+                  color: '#ffdd00',
+                  padding: '0 4px'
+                }}
+              >
+                {l}
+              </span>
+            ))}
+          </div>
+        </div>
         )}
         {busStatus.error && <div style={{ color: '#ff0088', marginTop: '0.2rem' }}>{busStatus.error}</div>}
       </div>

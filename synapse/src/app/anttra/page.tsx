@@ -12,6 +12,7 @@ const projects = [
   { name: 'VOID', desc: 'face melter', href: '/anttra/void', live: false },
   { name: 'Master thesis notes', desc: 'documentation of my master thesis', href: '/anttra/master', live: false },
   { name: 'Landmark controller', desc: 'hand tracking + liquid glass', href: '/anttra/landmark', live: false },
+  { name: 'Face mesh', desc: 'face to vertices, then gone', href: '/anttra/facemesh', live: true },
 ];
 
 export default function AnttraPage() {
@@ -91,7 +92,7 @@ export default function AnttraPage() {
         <div className="project-row h-[1px] w-full bg-white/10" />
       </div>
 
-      <footer className="footer-link mt-32 relative z-10">
+      <footer className="footer-link mt-32 relative z-10 flex items-center justify-between">
         <Link href="/anttra/void" className="font-mono text-[10px] opacity-20 hover:opacity-100 hover:tracking-[0.5em] transition-all duration-700">
           [VOID_SEGMENT]
         </Link>

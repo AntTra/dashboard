@@ -66,16 +66,18 @@ export default function FaceMeshPage() {
     }
 
     // strip properties
-    const stripDir = new Int8Array(NUM_STRIPS);
-    const stripAmp = new Float32Array(NUM_STRIPS);
-    const stripLevel = new Float32Array(NUM_STRIPS);
-    const stripRole = new Uint8Array(NUM_STRIPS);
+    const stripDir    = new Int8Array(NUM_STRIPS);
+    const stripAmp    = new Float32Array(NUM_STRIPS);
+    const stripLevel  = new Float32Array(NUM_STRIPS);
+    const stripRole   = new Uint8Array(NUM_STRIPS);
+    const stripSrcCol = new Uint8Array(NUM_STRIPS); // which column's pixels to sample
 
     function assignStrips() {
       for (let s = 0; s < NUM_STRIPS; s++) {
-        stripDir[s] = (s % 2 === 0 ? 1 : -1) * (Math.random() < 0.15 ? -1 : 1);
-        stripAmp[s] = 10 + Math.random() * 62;
-        stripLevel[s] = SORT_LEVELS[Math.floor(Math.random() * SORT_LEVELS.length)];
+        stripDir[s]    = (s % 2 === 0 ? 1 : -1) * (Math.random() < 0.15 ? -1 : 1);
+        stripAmp[s]    = 10 + Math.random() * 62;
+        stripLevel[s]  = SORT_LEVELS[Math.floor(Math.random() * SORT_LEVELS.length)];
+        stripSrcCol[s] = s; // start sampling own column
         const roll = Math.random();
         stripRole[s] = roll < 0.55 ? 0 : roll < 0.85 ? 1 : 2;
       }
@@ -140,9 +142,10 @@ export default function FaceMeshPage() {
           if (phase === 'distorted') {
             for (let k = 0; k < 2; k++) {
               const s = Math.floor(Math.random() * (NUM_STRIPS - 8));
-              const tmpL = stripLevel[s]; stripLevel[s] = stripLevel[s + 8]; stripLevel[s + 8] = tmpL;
-              const tmpR = stripRole[s]; stripRole[s] = stripRole[s + 8]; stripRole[s + 8] = tmpR;
-              const tmpD = stripDir[s]; stripDir[s] = stripDir[s + 8]; stripDir[s + 8] = tmpD;
+              const tmpL = stripLevel[s];  stripLevel[s]  = stripLevel[s+8];  stripLevel[s+8]  = tmpL;
+              const tmpR = stripRole[s];   stripRole[s]   = stripRole[s+8];   stripRole[s+8]   = tmpR;
+              const tmpD = stripDir[s];    stripDir[s]    = stripDir[s+8];    stripDir[s+8]    = tmpD;
+              const tmpS = stripSrcCol[s]; stripSrcCol[s] = stripSrcCol[s+8]; stripSrcCol[s+8] = tmpS;
             }
           }
 
@@ -195,11 +198,16 @@ export default function FaceMeshPage() {
                 const edy = (restY[i] - faceCy) / faceRy;
                 if (edx*edx + edy*edy > 1) continue;
 
-                const raw = liveR[i], gaw = liveG[i], baw = liveB[i];
-                if (raw + gaw + baw < 18) continue;
-
                 const s = Math.max(0, Math.min(NUM_STRIPS - 1,
                   Math.floor((restX[i] - faceMinX) / stripW) | 0));
+
+                // sample pixels from the source column (may be a different column after swaps)
+                const srcX = faceMinX + (stripSrcCol[s] + 0.5) * stripW;
+                const srcCol = Math.max(0, Math.min(cols - 1, (srcX / STEP) | 0));
+                const j = Math.floor(i / cols) * cols + srcCol;
+                const raw = liveR[j], gaw = liveG[j], baw = liveB[j];
+                if (raw + gaw + baw < 18) continue;
+
                 const role = STRIP_ROLES[stripRole[s]];
                 const bright = 1.25 * offset.dim * role[3];
                 const disp = stripDir[s] * stripAmp[s] * stripLevel[s];

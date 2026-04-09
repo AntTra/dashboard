@@ -210,8 +210,8 @@ export default function CVPage() {
           ))}
 
           <SectionTitle>Education</SectionTitle>
-          {DATA.education.map(e => (
-            <div key={e.school} style={{ marginBottom: '0.8rem' }}>
+          {DATA.education.map((e, i) => (
+            <div key={i} style={{ marginBottom: '0.8rem' }}>
               <div style={{ fontSize: '0.82rem', fontWeight: 'bold' }}>{e.school}</div>
               <div style={{ fontSize: '0.72rem', color: C.dim }}>{e.degree} · {e.year}</div>
             </div>

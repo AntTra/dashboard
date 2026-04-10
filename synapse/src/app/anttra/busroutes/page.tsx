@@ -120,6 +120,17 @@ const S: Record<string, React.CSSProperties> = {
   mono: { fontFamily: 'monospace' },
 };
 
+function useIsMobile() {
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setMobile(window.innerWidth < 600);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  return mobile;
+}
+
 // Sub-components
 
 function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
@@ -143,8 +154,9 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
 }
 
 function DepartureRow({ call, hidden }: { call: Call; hidden: boolean }) {
-  const mins  = minsUntil(call.expectedDepartureTime);
-  const delay = delayMins(call);
+  const mins   = minsUntil(call.expectedDepartureTime);
+  const delay  = delayMins(call);
+  const mobile = useIsMobile();
   if (mins < 0 || hidden) return null;
 
   return (
@@ -152,13 +164,15 @@ function DepartureRow({ call, hidden }: { call: Call; hidden: boolean }) {
       <span style={{ ...S.mono, fontSize: '0.85rem', fontWeight: 700, minWidth: '2.5rem', opacity: 0.9 }}>
         {call.serviceJourney.line.publicCode}
       </span>
-      <span style={{ ...S.mono, fontSize: '0.78rem', opacity: 0.45, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-        {call.destinationDisplay.frontText}
-      </span>
-      {delay > 0 && (
+      {!mobile && (
+        <span style={{ ...S.mono, fontSize: '0.78rem', opacity: 0.45, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {call.destinationDisplay.frontText}
+        </span>
+      )}
+      {!mobile && delay > 0 && (
         <span style={{ ...S.mono, fontSize: '0.65rem', color: '#cc4444', opacity: 0.85 }}>+{delay}</span>
       )}
-      <span style={{ ...S.mono, fontSize: '0.88rem', minWidth: '4rem', textAlign: 'right', opacity: mins > 15 ? 0.35 : 1, color: call.realtime ? '#d0d0d0' : '#888' }}>
+      <span style={{ ...S.mono, fontSize: '0.88rem', minWidth: '4rem', textAlign: 'right', marginLeft: 'auto', opacity: mins > 15 ? 0.35 : 1, color: !mobile && call.realtime ? '#d0d0d0' : '#888' }}>
         {mins === 0 ? 'nå' : `${mins} min`}
       </span>
     </div>

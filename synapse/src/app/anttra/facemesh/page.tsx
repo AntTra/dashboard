@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 
 const CDN = (f: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}`;
 const VW = 640, VH = 480;
@@ -8,24 +9,19 @@ const BASE = 468;
 const STEP = 4;
 const NUM_STRIPS = 20;
 
-// spatial offsets for each echo copy — rendered back-to-front
-// dim: brightness multiplier for that echo pass
 const ECHO_OFFSETS = [
-  { dx: 2, dy: -55, dim: 0.45 }, // ghost — far back, dim
-  { dx: -2, dy: +28, dim: 0.80 }, // echo below
-  { dx: 2, dy: -28, dim: 0.80 }, // echo above
-  { dx: 0, dy: 0, dim: 1.20 }, // base — on top, brightest
+  { dx: 2, dy: -55, dim: 0.45 },
+  { dx: -2, dy: +28, dim: 0.80 },
+  { dx: 2, dy: -28, dim: 0.80 },
+  { dx: 0, dy: 0, dim: 1.20 },
 ];
 
-// per-strip color roles: [cr, cg, cb, brightness_boost]
-// dark red → magenta → lit purple
 const STRIP_ROLES: [number, number, number, number][] = [
-  [0.60, 0.01, 0.06, 1.00], // dark red      (~55 % of strips)
-  [0.95, 0.01, 0.05, 1.00], // magenta        (~30 %)
-  [0.55, 0.06, 1.40, 1.80], // lit purple     (~15 %, brighter)
+  [0.60, 0.01, 0.06, 1.00],
+  [0.95, 0.01, 0.05, 1.00],
+  [0.55, 0.06, 1.40, 1.80],
 ];
 
-// discrete displacement levels
 const SORT_LEVELS = [-1, -0.65, -0.3, 0.3, 0.65, 1];
 
 type Phase = 'idle' | 'distorted';
@@ -65,19 +61,18 @@ export default function FaceMeshPage() {
       restY[i] = Math.floor(i / cols) * STEP + STEP / 2;
     }
 
-    // strip properties
     const stripDir    = new Int8Array(NUM_STRIPS);
     const stripAmp    = new Float32Array(NUM_STRIPS);
     const stripLevel  = new Float32Array(NUM_STRIPS);
     const stripRole   = new Uint8Array(NUM_STRIPS);
-    const stripSrcCol = new Uint8Array(NUM_STRIPS); // which column's pixels to sample
+    const stripSrcCol = new Uint8Array(NUM_STRIPS);
 
     function assignStrips() {
       for (let s = 0; s < NUM_STRIPS; s++) {
         stripDir[s]    = (s % 2 === 0 ? 1 : -1) * (Math.random() < 0.15 ? -1 : 1);
         stripAmp[s]    = 10 + Math.random() * 62;
         stripLevel[s]  = SORT_LEVELS[Math.floor(Math.random() * SORT_LEVELS.length)];
-        stripSrcCol[s] = s; // start sampling own column
+        stripSrcCol[s] = s;
         const roll = Math.random();
         stripRole[s] = roll < 0.55 ? 0 : roll < 0.85 ? 1 : 2;
       }
@@ -114,9 +109,7 @@ export default function FaceMeshPage() {
         const imgData = ctx.createImageData(VW, VH);
         const buf = imgData.data;
 
-        // write a 2-px wide vertical line segment into buf
-        function writeLine(x: number, y0raw: number, y1raw: number,
-          r: number, g: number, b: number) {
+        function writeLine(x: number, y0raw: number, y1raw: number, r: number, g: number, b: number) {
           const px = x | 0;
           if (px < 0 || px >= VW) return;
           const y0 = Math.max(0, Math.min(y0raw, y1raw) | 0);
@@ -138,7 +131,6 @@ export default function FaceMeshPage() {
           if (phase === 'distorted' && lastPhase === 'idle') assignStrips();
           lastPhase = phase;
 
-          // adjacent-swap — 4 per frame (half speed)
           if (phase === 'distorted') {
             for (let k = 0; k < 2; k++) {
               const s = Math.floor(Math.random() * (NUM_STRIPS - 8));
@@ -152,7 +144,6 @@ export default function FaceMeshPage() {
           sampleColors();
           buf.fill(0);
 
-          // ── live face bounds ─────────────────────────────────────────────
           let faceCx = VW / 2, faceCy = VH / 2;
           let faceRx = 80, faceRy = 100, faceMinX = faceCx - faceRx;
           let faceMinY = faceCy - faceRy, faceMaxY = faceCy + faceRy;
@@ -173,7 +164,6 @@ export default function FaceMeshPage() {
           }
           const stripW = (faceRx * 2) / NUM_STRIPS;
 
-          // ── body grid (skip face ellipse in distorted mode) ─────────────
           for (let i = 0; i < NG; i++) {
             const r = Math.min(255, liveR[i] * 1.45 | 0);
             const g = Math.min(255, liveG[i] * 1.45 | 0);
@@ -190,7 +180,6 @@ export default function FaceMeshPage() {
             }
           }
 
-          // ── echo passes (distorted only) — back to front ─────────────────
           if (phase === 'distorted' && hasLandmarks) {
             for (const offset of ECHO_OFFSETS) {
               for (let i = 0; i < NG; i++) {
@@ -201,7 +190,6 @@ export default function FaceMeshPage() {
                 const s = Math.max(0, Math.min(NUM_STRIPS - 1,
                   Math.floor((restX[i] - faceMinX) / stripW) | 0));
 
-                // sample pixels from the source column (may be a different column after swaps)
                 const srcX = faceMinX + (stripSrcCol[s] + 0.5) * stripW;
                 const srcCol = Math.max(0, Math.min(cols - 1, (srcX / STEP) | 0));
                 const j = Math.floor(i / cols) * cols + srcCol;
@@ -216,11 +204,7 @@ export default function FaceMeshPage() {
                 const cg = Math.min(255, gaw * bright * role[1] | 0);
                 const cb = Math.min(255, baw * bright * role[2] | 0);
 
-                const originY = restY[i] + offset.dy;
-                const dispY = originY + disp;
-                const originX = restX[i] + offset.dx;
-
-                writeLine(originX, originY, dispY, cr, cg, cb);
+                writeLine(restX[i] + offset.dx, restY[i] + offset.dy, restY[i] + offset.dy + disp, cr, cg, cb);
               }
             }
           }
@@ -269,12 +253,21 @@ export default function FaceMeshPage() {
       onClick={handleClick}
       style={{ backgroundColor: '#000', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace' }}
     >
+      <nav style={{ position: 'fixed', top: '4rem', left: '2rem', zIndex: 10 }}>
+        <Link
+          href="/anttra"
+          onClick={e => e.stopPropagation()}
+          style={{ fontFamily: 'monospace', fontSize: '0.625rem', letterSpacing: '0.3em', opacity: 0.5, color: '#fff', textDecoration: 'none' }}
+        >
+          ← return
+        </Link>
+      </nav>
       <div style={{ position: 'relative', width: '100%', maxWidth: 720 }}>
         <video ref={videoRef} style={{ display: 'none' }} playsInline muted />
         <canvas ref={canvasRef} style={{ width: '100%', display: 'block', cursor: 'pointer' }} />
         {status === 'loading' && (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', color: 'rgba(230,210,180,0.4)', fontSize: '0.7rem', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
-            loading
+            Please reload the browser
           </div>
         )}
         {status === 'error' && (

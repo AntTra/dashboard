@@ -9,10 +9,10 @@ const projects = [
   { name: 'CV', desc: "a little bit 'bout what I've done", href: '/anttra/cv', live: true },
   { name: 'Vertex globes', desc: 'globe viewer', href: '/anttra/globe', live: true },
   { name: 'Busroutes - Trondheim', desc: 'real-time transit api in Trondheim', href: '/anttra/busroutes', live: true },
+  { name: 'Face mesh', desc: 'Blackwalled face', href: '/anttra/facemesh', live: true },
   { name: 'VOID', desc: 'face melter', href: '/anttra/void', live: false },
   { name: 'Master thesis notes', desc: 'documentation of my master thesis', href: '/anttra/master', live: false },
   { name: 'Landmark controller', desc: 'hand tracking + liquid glass', href: '/anttra/landmark', live: false },
-  { name: 'Face mesh', desc: 'face to vertices, then gone', href: '/anttra/facemesh', live: true },
 ];
 
 export default function AnttraPage() {

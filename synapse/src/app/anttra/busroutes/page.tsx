@@ -310,6 +310,7 @@ export default function BusRoutesPage() {
   const [view,        setView]        = useState<'departures' | 'map'>('departures');
   const [mapRefreshKey, setMapRefreshKey] = useState(0);
   const [refreshing,  setRefreshing]  = useState(false);
+  const isMobile = useIsMobile();
 
   const [, tick] = useState(0);
 
@@ -466,7 +467,7 @@ export default function BusRoutesPage() {
 
       {/* Map view */}
       {view === 'map' && (
-        <div style={{ height: 'calc(100vh - 17rem)', borderRadius: 1, overflow: 'hidden', border: '1px solid #d0d0d01e' }}>
+        <div style={{ height: isMobile ? 'calc(100svh - 9rem)' : 'calc(100vh - 17rem)', borderRadius: 1, overflow: 'hidden', border: '1px solid #d0d0d01e' }}>
           <CyberpunkMap refreshKey={mapRefreshKey} />
         </div>
       )}

@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { Accordion } from '@base-ui-components/react/accordion';
 import { Checkbox } from '@base-ui-components/react/checkbox';
 import { CheckboxGroup } from '@base-ui-components/react/checkbox-group';
@@ -19,8 +20,11 @@ export default function GlobePage() {
   const moon = earthOpts.includes('moon');
 
   return (
-    <div className="w-full h-screen flex">
-      <div className="w-64 border-r border-zinc-800 p-3">
+    <div className="w-full h-screen flex flex-col md:flex-row">
+      <div className="flex-shrink-0 border-b md:border-b-0 md:border-r border-zinc-800 p-3 md:w-64 overflow-y-auto max-h-[40vh] md:max-h-none">
+        <Link href="/anttra" className="block mb-3 font-mono text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+          ← anttra
+        </Link>
         <Accordion.Root
           value={openValues}
           onValueChange={(vals) => setOpenValues(vals ?? [])}
@@ -124,7 +128,7 @@ export default function GlobePage() {
       </div>
 
       {/* Viewer */}
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 min-w-0">
         <Globe      
           mode={planet}
           clouds={clouds}              

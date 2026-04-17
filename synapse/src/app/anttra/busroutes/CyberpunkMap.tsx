@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -711,11 +711,13 @@ export default function CyberpunkMap({ refreshKey }: { refreshKey?: number }) {
 
       {/* Status panel — top left */}
       <div style={{
-        position: 'absolute', top: '1.2rem', left: '1.2rem',
-        fontFamily: 'monospace', fontSize: '0.65rem', letterSpacing: '0.08em',
+        position: 'absolute', top: '0.75rem', left: '0.75rem',
+        fontFamily: 'monospace', fontSize: isMobile ? '0.58rem' : '0.65rem', letterSpacing: '0.08em',
         color: '#00ffcc', background: 'rgba(0,4,12,0.82)',
-        border: '1px solid #00ffcc33', padding: '0.5rem 0.8rem',
-        lineHeight: 1.8, pointerEvents: 'none', minWidth: '160px',
+        border: '1px solid #00ffcc33', padding: isMobile ? '0.35rem 0.5rem' : '0.5rem 0.8rem',
+        lineHeight: 1.8, pointerEvents: 'none',
+        minWidth: isMobile ? 'auto' : '160px',
+        maxWidth: isMobile ? 'calc(50vw - 1rem)' : undefined,
       }}>
         <div>
           <span style={{ opacity: 0.5 }}>STATE </span>
@@ -724,7 +726,7 @@ export default function CyberpunkMap({ refreshKey }: { refreshKey?: number }) {
           </span>
         </div>
         <div><span style={{ opacity: 0.5 }}>BUSES </span>{busStatus.count}</div>
-        {busStatus.loadMs !== null && <div><span style={{ opacity: 0.5 }}>LOAD </span>{busStatus.loadMs}ms</div>}
+        {busStatus.loadMs !== null && !isMobile && <div><span style={{ opacity: 0.5 }}>LOAD </span>{busStatus.loadMs}ms</div>}
         {busStatus.lastUpdated && <div><span style={{ opacity: 0.5 }}>UPD </span>{busStatus.lastUpdated}</div>}
         {busStatus.activeLines.length > 0 && (
         <div style={{ marginTop: '0.3rem' }}>
@@ -750,10 +752,10 @@ export default function CyberpunkMap({ refreshKey }: { refreshKey?: number }) {
         {busStatus.error && <div style={{ color: '#ff0088', marginTop: '0.2rem' }}>{busStatus.error}</div>}
       </div>
 
-      {/* Arrival table — top right */}
-      {arrivals.length >= 0 && (
+      {/* Arrival table — top right (desktop) / below status (mobile hidden to save space) */}
+      {!isMobile && arrivals.length >= 0 && (
         <div style={{
-          position: 'absolute', top: '1.2rem', right: '1.2rem',
+          position: 'absolute', top: '0.75rem', right: '0.75rem',
           fontFamily: 'monospace', fontSize: '0.65rem', letterSpacing: '0.07em',
           background: 'rgba(0,4,12,0.88)', border: '1px solid #00ffcc33',
           pointerEvents: 'none', zIndex: 10, minWidth: '260px',
@@ -764,31 +766,35 @@ export default function CyberpunkMap({ refreshKey }: { refreshKey?: number }) {
               const hex = '#' + a.color.toString(16).padStart(6, '0');
               const isNewest = i === arrivals.length - 1;
               return (
-                <>
-                  <span key={a.id + 't'} style={{ color: '#ffffff', opacity: isNewest ? 1 : 0.6 }}>{a.time}</span>
-                  <span key={a.id + 'l'} style={{ color: '#ffdd00', opacity: isNewest ? 1 : 0.6 }}>{a.line}</span>
-                  <span key={a.id + 's'} style={{ color: hex, opacity: isNewest ? 1 : 0.6, textTransform: 'uppercase' }}>{a.stop}</span>
-                  <span key={a.id + 'd'} style={{ color: '#cce8ff', opacity: isNewest ? 0.8 : 0.4, fontSize: '0.58rem' }}>{a.desc}</span>
-                </>
+                <Fragment key={a.id}>
+                  <span style={{ color: '#ffffff', opacity: isNewest ? 1 : 0.6 }}>{a.time}</span>
+                  <span style={{ color: '#ffdd00', opacity: isNewest ? 1 : 0.6 }}>{a.line}</span>
+                  <span style={{ color: hex, opacity: isNewest ? 1 : 0.6, textTransform: 'uppercase' }}>{a.stop}</span>
+                  <span style={{ color: '#cce8ff', opacity: isNewest ? 0.8 : 0.4, fontSize: '0.58rem' }}>{a.desc}</span>
+                </Fragment>
               );
             })}
           </div>
         </div>
       )}
 
-      {/* Stop departure panel — bottom center */}
+      {/* Stop departure panel — bottom center / full-width on mobile */}
       {stopPanel && (
         <div style={{
-          position: 'absolute', bottom: '1.2rem', left: '50%', transform: 'translateX(-50%)',
+          position: 'absolute',
+          bottom: isMobile ? 0 : '1.2rem',
+          left: isMobile ? 0 : '50%',
+          right: isMobile ? 0 : 'auto',
+          transform: isMobile ? 'none' : 'translateX(-50%)',
           fontFamily: 'monospace', fontSize: '0.65rem', letterSpacing: '0.07em',
-          background: 'rgba(0,4,12,0.92)', border: `1px solid #${ stopPanel.color.toString(16).padStart(6,'0') }55`,
-          minWidth: '280px', pointerEvents: 'auto', zIndex: 20,
+          background: 'rgba(0,4,12,0.95)', border: `1px solid #${ stopPanel.color.toString(16).padStart(6,'0') }55`,
+          minWidth: isMobile ? 'unset' : '280px', pointerEvents: 'auto', zIndex: 20,
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0.7rem', borderBottom: `1px solid #${ stopPanel.color.toString(16).padStart(6,'0') }33` }}>
             <span style={{ color: '#' + stopPanel.color.toString(16).padStart(6,'0'), textTransform: 'uppercase' }}>
               {stopPanel.label}{stopPanel.desc ? ` · ${stopPanel.desc}` : ''}
             </span>
-            <span style={{ cursor: 'pointer', opacity: 0.5 }} onClick={() => setStopPanel(null)}>×</span>
+            <span style={{ cursor: 'pointer', opacity: 0.5, padding: '0 0.25rem' }} onClick={() => setStopPanel(null)}>×</span>
           </div>
           {stopPanel.loading ? (
             <div style={{ padding: '0.5rem 0.7rem', opacity: 0.5 }}>loading...</div>
@@ -797,18 +803,19 @@ export default function CyberpunkMap({ refreshKey }: { refreshKey?: number }) {
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '3.5rem 2.5rem 1fr', gap: '0 0.5rem', padding: '0.35rem 0.7rem' }}>
               {stopPanel.departures.map((d, i) => (
-                <>
-                  <span key={i + 't'} style={{ color: '#ffffff' }}>{d.time}</span>
-                  <span key={i + 'l'} style={{ color: '#ffdd00' }}>{d.line}</span>
-                  <span key={i + 'd'} style={{ color: '#cce8ff', textTransform: 'uppercase' }}>{d.dest}</span>
-                </>
+                <Fragment key={i}>
+                  <span style={{ color: '#ffffff' }}>{d.time}</span>
+                  <span style={{ color: '#ffdd00' }}>{d.line}</span>
+                  <span style={{ color: '#cce8ff', textTransform: 'uppercase' }}>{d.dest}</span>
+                </Fragment>
               ))}
             </div>
           )}
         </div>
       )}
 
-      {/* Corner UI */}
+      {/* Corner UI — hidden on mobile to avoid clutter */}
+      {!isMobile && (
       <div style={{
         position: 'absolute', bottom: '1.2rem', left: '1.2rem',
         fontFamily: 'monospace', fontSize: '1.0rem',
@@ -818,8 +825,10 @@ export default function CyberpunkMap({ refreshKey }: { refreshKey?: number }) {
         <div>lerkendal</div>
         <div style={{ color: '#ff0088' }}>trondheim · atb</div>
       </div>
+      )}
 
-      {/* Legend */}
+      {/* Legend — hidden on mobile to avoid clutter */}
+      {!isMobile && (
       <div style={{
         position: 'absolute', bottom: '1.2rem', right: '1.2rem',
         fontFamily: 'monospace', fontSize: '1.0rem',
@@ -830,6 +839,7 @@ export default function CyberpunkMap({ refreshKey }: { refreshKey?: number }) {
         <div style={{ color: '#ff0000' }}>● departing stop</div>
         <div style={{ color: '#00ffcc' }}>● approaching stop</div>
       </div>
+      )}
     </div>
   );
 }

@@ -308,6 +308,8 @@ export default function BusRoutesPage() {
   }, []);
 
   const [view,        setView]        = useState<'departures' | 'map'>('departures');
+  const [mapRefreshKey, setMapRefreshKey] = useState(0);
+  const [refreshing,  setRefreshing]  = useState(false);
 
   const [, tick] = useState(0);
 
@@ -326,6 +328,13 @@ export default function BusRoutesPage() {
     fetchDepartures();
     const id = setInterval(fetchDepartures, 30000);
     return () => clearInterval(id);
+  }, [fetchDepartures]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setMapRefreshKey(k => k + 1);
+    await fetchDepartures();
+    setRefreshing(false);
   }, [fetchDepartures]);
 
   useEffect(() => {
@@ -412,9 +421,23 @@ export default function BusRoutesPage() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
         <Link href="/anttra" style={{ ...S.mono, fontSize: '0.7rem', opacity: 0.4, color: '#d0d0d0' }}>← anttra</Link>
-        <span style={{ ...S.mono, fontSize: '0.62rem', opacity: 0.85 }}>
-          {lastUpdated ? `Last updated ${lastUpdated.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` : ''}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span style={{ ...S.mono, fontSize: '0.62rem', opacity: 0.85 }}>
+            {lastUpdated ? `Last updated ${lastUpdated.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` : ''}
+          </span>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            style={{
+              ...S.mono, fontSize: '0.65rem', padding: '0.2rem 0.55rem',
+              border: '1px solid #d0d0d025', borderRadius: 2,
+              background: 'transparent', color: refreshing ? '#d0d0d030' : '#d0d0d066',
+              cursor: refreshing ? 'default' : 'pointer', transition: 'color 0.15s',
+            }}
+          >
+            {refreshing ? '...' : '↺'}
+          </button>
+        </div>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2.5rem' }}>
@@ -444,7 +467,7 @@ export default function BusRoutesPage() {
       {/* Map view */}
       {view === 'map' && (
         <div style={{ height: 'calc(100vh - 17rem)', borderRadius: 1, overflow: 'hidden', border: '1px solid #d0d0d01e' }}>
-          <CyberpunkMap />
+          <CyberpunkMap refreshKey={mapRefreshKey} />
         </div>
       )}
 

@@ -373,9 +373,17 @@ interface ArrivalNotif  { id: string; stop: string; desc: string; line: string; 
 const ARRIVE_DIST     = 33;  
 const ARRIVE_COOLDOWN = 60_000;
 
-export default function CyberpunkMap() {
+export default function CyberpunkMap({ refreshKey }: { refreshKey?: number }) {
   const mountRef      = useRef<HTMLDivElement>(null);
+  const updateVehiclesRef = useRef<(() => Promise<void>) | null>(null);
   const activeRef     = useRef(true);
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 600);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
   const sceneRef      = useRef<THREE.Scene | null>(null);
   const vehicleMeshes = useRef<Map<string, THREE.Group>>(new Map());
   const pulseMeshes   = useRef<THREE.Mesh[]>([]);
@@ -619,7 +627,7 @@ export default function CyberpunkMap() {
 
   useEffect(() => {
     const update = async () => {
-      if (document.hidden) return;
+      if (!activeRef.current) return;
       const scene = sceneRef.current;
       if (!scene) return;
       setBusStatus(s => ({ ...s, state: 'fetching' }));
@@ -676,10 +684,15 @@ export default function CyberpunkMap() {
         setBusStatus(s => ({ ...s, state: 'error', error: String(err?.message ?? err) }));
       }
     };
+    updateVehiclesRef.current = update;
     update();
     const id = setInterval(update, 25_000);
-    return () => clearInterval(id);
+    return () => { clearInterval(id); updateVehiclesRef.current = null; };
   }, []);
+
+  useEffect(() => {
+    if (refreshKey !== undefined && refreshKey > 0) updateVehiclesRef.current?.();
+  }, [refreshKey]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>

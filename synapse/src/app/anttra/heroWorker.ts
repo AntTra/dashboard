@@ -4,6 +4,11 @@ const N         = 80;
 const MAX_CONN  = 150;
 const CONN_DIST = 30;
 
+const MOUSE_RADIUS = 30;
+const MOUSE_FORCE  = 0.06;
+const DAMPING      = 0.88;
+const MAX_DISP     = 15;
+
 let renderer:  THREE.WebGLRenderer;
 let scene:     THREE.Scene;
 let camera:    THREE.PerspectiveCamera;
@@ -17,11 +22,18 @@ const bases    = new Float32Array(N * 3);
 const phases   = new Float32Array(N * 3);
 const speeds   = new Float32Array(N);
 const isAccent = new Uint8Array(N);
+const offset   = new Float32Array(N * 3);
+
+const raycaster  = new THREE.Raycaster();
+const mousePlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -5);
+const mouseWorld = new THREE.Vector3();
+const mouseNDC   = new THREE.Vector2(9999, 9999);
 
 addEventListener('message', (e: MessageEvent) => {
   switch (e.data.type) {
-    case 'init':   init(e.data);                    break;
-    case 'resize': onResize(e.data.w, e.data.h);    break;
+    case 'init':      init(e.data);                         break;
+    case 'resize':    onResize(e.data.w, e.data.h);         break;
+    case 'mousemove': mouseNDC.set(e.data.x, e.data.y);    break;
     case 'destroy':
       cancelAnimationFrame(rafId);
       renderer?.dispose();
@@ -34,36 +46,32 @@ addEventListener('message', (e: MessageEvent) => {
 function init({ canvas, w, h, dpr, mobile }: {
   canvas: OffscreenCanvas; w: number; h: number; dpr: number; mobile: boolean;
 }) {
-  const count  = mobile ? Math.floor(N * 0.55) : N;
-  const maxC   = mobile ? 80 : MAX_CONN;
+  const count = mobile ? Math.floor(N * 0.55) : N;
+  const maxC  = mobile ? 80 : MAX_CONN;
 
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', alpha: true });
   renderer.setPixelRatio(dpr);
   renderer.setSize(w, h, false);
-  renderer.setClearColor(0x040404, 1);
+  renderer.setClearColor(0x000000, 0);
 
   scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x040404, 0.006);
+  scene.fog = new THREE.FogExp2(0x1c1c20, 0.006);
 
   camera = new THREE.PerspectiveCamera(60, w / h, 0.1, 800);
   camera.position.set(0, 35, 90);
   camera.lookAt(0, 0, 0);
 
-  const grid = new THREE.GridHelper(300, 50, 0x0d0d0d, 0x080808);
-  grid.position.y = -22;
-  scene.add(grid);
-
   const pPos = new Float32Array(count * 3);
   const pCol = new Float32Array(count * 3);
   for (let i = 0; i < count; i++) {
-    bases[i*3]   = (Math.random() - 0.5) * 160;
-    bases[i*3+1] = (Math.random() - 0.5) * 55 + 5;
-    bases[i*3+2] = (Math.random() - 0.5) * 160;
-    phases[i*3]  = Math.random() * Math.PI * 2;
-    phases[i*3+1]= Math.random() * Math.PI * 2;
-    phases[i*3+2]= Math.random() * Math.PI * 2;
-    speeds[i]    = 0.25 + Math.random() * 0.4;
-    isAccent[i]  = Math.random() < 0.12 ? 1 : 0;
+    bases[i*3]    = (Math.random() - 0.5) * 160;
+    bases[i*3+1]  = (Math.random() - 0.5) * 55 + 5;
+    bases[i*3+2]  = (Math.random() - 0.5) * 160;
+    phases[i*3]   = Math.random() * Math.PI * 2;
+    phases[i*3+1] = Math.random() * Math.PI * 2;
+    phases[i*3+2] = Math.random() * Math.PI * 2;
+    speeds[i]     = 0.25 + Math.random() * 0.4;
+    isAccent[i]   = Math.random() < 0.12 ? 1 : 0;
     pPos[i*3]   = bases[i*3];
     pPos[i*3+1] = bases[i*3+1];
     pPos[i*3+2] = bases[i*3+2];
@@ -97,12 +105,35 @@ function init({ canvas, w, h, dpr, mobile }: {
     rafId = requestAnimationFrame(animate);
     t += 0.008;
 
+    raycaster.setFromCamera(mouseNDC, camera);
+    raycaster.ray.intersectPlane(mousePlane, mouseWorld);
+
     const posAttr = ptGeo.attributes.position as THREE.BufferAttribute;
     for (let i = 0; i < count; i++) {
-      const s = speeds[i];
-      posAttr.array[i*3]   = bases[i*3]   + Math.sin(t * s        + phases[i*3])   * 13;
-      posAttr.array[i*3+1] = bases[i*3+1] + Math.sin(t * s * 0.6  + phases[i*3+1]) * 6;
-      posAttr.array[i*3+2] = bases[i*3+2] + Math.sin(t * s * 0.85 + phases[i*3+2]) * 13;
+      const s  = speeds[i];
+      const bx = bases[i*3]   + Math.sin(t * s        + phases[i*3])   * 13;
+      const by = bases[i*3+1] + Math.sin(t * s * 0.6  + phases[i*3+1]) * 6;
+      const bz = bases[i*3+2] + Math.sin(t * s * 0.85 + phases[i*3+2]) * 13;
+
+      const dx = bx - mouseWorld.x;
+      const dz = bz - mouseWorld.z;
+      const dist2 = dx*dx + dz*dz;
+      if (dist2 < MOUSE_RADIUS * MOUSE_RADIUS && dist2 > 0.01) {
+        const dist  = Math.sqrt(dist2);
+        const force = (1 - dist / MOUSE_RADIUS) * MOUSE_FORCE;
+        offset[i*3]   += (dx / dist) * force;
+        offset[i*3+2] += (dz / dist) * force;
+      }
+      offset[i*3]   *= DAMPING;
+      offset[i*3+2] *= DAMPING;
+      if (offset[i*3]   >  MAX_DISP) offset[i*3]   =  MAX_DISP;
+      if (offset[i*3]   < -MAX_DISP) offset[i*3]   = -MAX_DISP;
+      if (offset[i*3+2] >  MAX_DISP) offset[i*3+2] =  MAX_DISP;
+      if (offset[i*3+2] < -MAX_DISP) offset[i*3+2] = -MAX_DISP;
+
+      posAttr.array[i*3]   = bx + offset[i*3];
+      posAttr.array[i*3+1] = by;
+      posAttr.array[i*3+2] = bz + offset[i*3+2];
     }
     posAttr.needsUpdate = true;
 

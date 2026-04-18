@@ -38,10 +38,20 @@ export default function HeroScene({ onReady }: { onReady: () => void }) {
     const onResize = () => {
       worker.postMessage({ type: 'resize', w: mount.clientWidth, h: mount.clientHeight });
     };
+    const onMouseMove = (e: MouseEvent) => {
+      const rect = mount.getBoundingClientRect();
+      worker.postMessage({
+        type: 'mousemove',
+        x:  ((e.clientX - rect.left) / rect.width)  * 2 - 1,
+        y: -((e.clientY - rect.top)  / rect.height) * 2 + 1,
+      });
+    };
     window.addEventListener('resize', onResize);
+    window.addEventListener('mousemove', onMouseMove);
 
     return () => {
       window.removeEventListener('resize', onResize);
+      window.removeEventListener('mousemove', onMouseMove);
       worker.postMessage({ type: 'destroy' });
       worker.terminate();
       if (mount.contains(canvas)) mount.removeChild(canvas);

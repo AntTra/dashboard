@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   fetchDepartures, searchStop, fetchTrip,
   type DepartureData, type Suggestion, type Call, type QuayData, type TripPattern, type Leg,
-} from './api';
+} from './api/Departure/api';
 
 const CyberpunkMap = dynamic(() => import('./CyberpunkMap'), { ssr: false });
 

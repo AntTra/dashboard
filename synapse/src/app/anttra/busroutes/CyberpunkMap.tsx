@@ -7,7 +7,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
-import { fetchVehicles, fetchStopDepartures } from './api';
+import { fetchVehicles, fetchStopDepartures } from './api/Departure/api';
 interface OsmData {
   buildings: { footprint: [number,number][]; height: number; type: string }[];
   roads:     { points:   [number,number][]; type: string }[];

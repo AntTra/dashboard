@@ -160,19 +160,22 @@ function DepartureRow({ call, hidden }: { call: Call; hidden: boolean }) {
   if (mins < 0 || hidden) return null;
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.7rem 0', borderBottom: '1px solid #d0d0d00a' }}>
-      <span style={{ ...S.mono, fontSize: '0.85rem', fontWeight: 700, minWidth: '2.5rem', opacity: 0.9 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem 0', borderBottom: `1px solid ${mobile ? '#d0d0d018' : '#d0d0d00a'}` }}>
+      <span style={{ ...S.mono, fontSize: mobile ? '1rem' : '0.85rem', fontWeight: 700, minWidth: '2.5rem', opacity: 1 }}>
         {call.serviceJourney.line.publicCode}
       </span>
       {!mobile && (
-        <span style={{ ...S.mono, fontSize: '0.78rem', opacity: 0.45, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span style={{ ...S.mono, fontSize: '0.78rem', opacity: 0.55, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {call.destinationDisplay.frontText}
         </span>
+      )}
+      {mobile && delay > 0 && (
+        <span style={{ ...S.mono, fontSize: '0.7rem', color: '#e05555' }}>+{delay}</span>
       )}
       {!mobile && delay > 0 && (
         <span style={{ ...S.mono, fontSize: '0.65rem', color: '#cc4444', opacity: 0.85 }}>+{delay}</span>
       )}
-      <span style={{ ...S.mono, fontSize: '0.88rem', minWidth: '4rem', textAlign: 'right', marginLeft: 'auto', opacity: mins > 15 ? 0.35 : 1, color: !mobile && call.realtime ? '#d0d0d0' : '#888' }}>
+      <span style={{ ...S.mono, fontSize: mobile ? '1rem' : '0.88rem', minWidth: '4rem', textAlign: 'right', marginLeft: 'auto', opacity: mins > 15 ? (mobile ? 0.55 : 0.35) : 1, color: call.realtime ? '#d0d0d0' : (mobile ? '#aaa' : '#888') }}>
         {mins === 0 ? 'nå' : `${mins} min`}
       </span>
     </div>
@@ -183,10 +186,10 @@ function QuayPanel({ label, quay, hidden }: { label: string; quay: QuayData; hid
   const visible = quay.estimatedCalls.filter(c => minsUntil(c.expectedDepartureTime) >= 0 && !hidden.has(c.serviceJourney.line.publicCode));
   return (
     <div style={{ flex: 1, minWidth: 220 }}>
-      <p style={{ ...S.mono, fontSize: '0.62rem', opacity: 0.68, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
+      <p style={{ ...S.mono, fontSize: '0.62rem', opacity: 0.85, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
         Lerkendal {label}
       </p>
-      <p style={{ ...S.mono, fontSize: '0.68rem', opacity: 0.58, marginBottom: '1.2rem' }}>{quay.description}</p>
+      <p style={{ ...S.mono, fontSize: '0.68rem', opacity: 0.72, marginBottom: '1.2rem' }}>{quay.description}</p>
       {visible.length === 0
         ? <p style={{ ...S.mono, fontSize: '0.72rem', opacity: 0.38 }}>no departures</p>
         : quay.estimatedCalls.map((c, i) => (
@@ -432,7 +435,7 @@ export default function BusRoutesPage() {
             style={{
               ...S.mono, fontSize: '0.65rem', padding: '0.2rem 0.55rem',
               border: '1px solid #d0d0d025', borderRadius: 2,
-              background: 'transparent', color: refreshing ? '#d0d0d030' : '#d0d0d066',
+              background: 'transparent', color: refreshing ? '#d0d0d055' : '#d0d0d0cc',
               cursor: refreshing ? 'default' : 'pointer', transition: 'color 0.15s',
             }}
           >

@@ -10,7 +10,6 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 const HeroScene       = dynamic(() => import('./HeroScene'),       { ssr: false });
-const MannequinScene  = dynamic(() => import('./MannequinScene'),  { ssr: false });
 
 type ShowcaseItem = {
   label: string; sub: string; href: string; accent: string; live: boolean;
@@ -221,13 +220,6 @@ export default function AnttraPage() {
         </div>
       </section>
 
-      <section className="relative z-20 flex flex-col items-center py-24"
-        style={{ borderTop: '1px solid rgba(208,208,208,0.06)' }}>
-        <span className="font-mono text-[9px] tracking-[0.3em] uppercase opacity-30 mb-10">model</span>
-        <div style={{ width: 'min(420px, 90vw)', height: 'min(540px, 70vh)' }}>
-          <MannequinScene />
-        </div>
-      </section>
 
       <div className="status-bar relative z-20 flex items-center justify-between px-8 md:px-16 py-5"
         style={{ borderTop: '1px solid rgba(208,208,208,0.06)' }}>

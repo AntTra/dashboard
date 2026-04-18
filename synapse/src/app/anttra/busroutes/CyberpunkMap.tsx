@@ -454,13 +454,6 @@ export default function CyberpunkMap({ refreshKey }: { refreshKey?: number }) {
       scene.add(marker);
     });
 
-    // Dummy bus at map center for development
-    const dummyBus = busMarker('99', 0x4c0000);
-    dummyBus.position.set(0, 0, 0);
-    dummyBus.userData.line = '99';
-    scene.add(dummyBus);
-    vehicleMeshes.current.set('__dummy__', dummyBus);
-
     // Generic stop markers — Points dot + instanced ground ring, 2 draw calls total
     {
       const N = EXTRA_STOPS.length;
@@ -476,13 +469,6 @@ export default function CyberpunkMap({ refreshKey }: { refreshKey?: number }) {
       const ringGeo = new THREE.RingGeometry(0.22, 0.26, 16);
       const ringMat = new THREE.MeshBasicMaterial({ color: 0x004455, side: THREE.DoubleSide });
       const rings   = new THREE.InstancedMesh(ringGeo, ringMat, N);
-      const dummy   = new THREE.Object3D();
-      dummy.rotation.x = -Math.PI / 2;
-      EXTRA_STOPS.forEach((s, i) => {
-        dummy.position.set(s.x, 0.01, s.z);
-        dummy.updateMatrix();
-        rings.setMatrixAt(i, dummy.matrix);
-      });
       rings.instanceMatrix.needsUpdate = true;
       scene.add(rings);
     }
@@ -670,7 +656,6 @@ export default function CyberpunkMap({ refreshKey }: { refreshKey?: number }) {
           }
         }
         for (const [id, mesh] of vehicleMeshes.current) {
-          if (id === '__dummy__') continue;
           if (!seen.has(id)) { scene.remove(mesh); vehicleMeshes.current.delete(id); }
         }
         const activeLines = [...new Set(

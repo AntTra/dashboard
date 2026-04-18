@@ -7,6 +7,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { fetchVehicles, fetchStopDepartures } from './api';
 interface OsmData {
   buildings: { footprint: [number,number][]; height: number; type: string }[];
   roads:     { points:   [number,number][]; type: string }[];
@@ -309,68 +310,9 @@ function headingToNearestStop(bx: number, bz: number): number {
   return -Math.atan2(best.x - bx, -(best.z - bz));
 }
 
-async function fetchStopDepartures(quayId: string): Promise<{ time: string; line: string; dest: string }[]> {
-  const query = `{ quay(id: "${quayId}") { estimatedCalls(numberOfDepartures: 6, timeRange: 3600) {
-    expectedDepartureTime
-    destinationDisplay { frontText }
-    serviceJourney { line { publicCode } }
-  } } }`;
-  const res = await fetch('https://api.entur.io/journey-planner/v3/graphql', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query }),
-  });
-  const json = await res.json();
-  return (json.data?.quay?.estimatedCalls ?? []).map((c: any) => ({
-    time: new Date(c.expectedDepartureTime).toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' }),
-    line: c.serviceJourney.line.publicCode,
-    dest: c.destinationDisplay.frontText,
-  }));
-}
-
-interface VehicleEntry { id: string; line: string; lat: number; lon: number; bearing: number; monitored: boolean }
-
-const VEHICLE_FILTER_LAT = 0.010;
-const VEHICLE_FILTER_LON = 0.022;
-
-function xmlText(block: string, tag: string): string {
-  const m = block.match(new RegExp(`<${tag}(?:\\s[^>]*)?>([^<]+)<\/${tag}>`));
-  return m ? m[1].trim() : '';
-}
-
-async function fetchVehicles() {
-  const res = await fetch('https://api.entur.io/realtime/v1/rest/vm?datasetId=ATB', { cache: 'no-store' });
-  const xml = await res.text();
-  const activityRx = /<[^>]*VehicleActivity[^>]*>([\s\S]*?)<\/[^>]*VehicleActivity[^>]*>/g;
-  const out = [];
-  let m;
-  while ((m = activityRx.exec(xml)) !== null) {
-    const block = m[1];
-    const lat = parseFloat(universalGet(block, 'Latitude'));
-    const lon = parseFloat(universalGet(block, 'Longitude'));
-    if (isNaN(lat) || isNaN(lon)) continue;
-    if (Math.abs(lat - CENTER_LAT) > VEHICLE_FILTER_LAT) continue;
-    if (Math.abs(lon - CENTER_LON) > VEHICLE_FILTER_LON) continue;
-    out.push({
-      id:        universalGet(block, 'VehicleMonitoringRef') || universalGet(block, 'VehicleRef'),
-      line:      universalGet(block, 'PublishedLineName'),
-      lat, lon,
-      bearing:   parseFloat(universalGet(block, 'Bearing')) || 0,
-      monitored: universalGet(block, 'Monitored').includes('true'),
-    });
-  }
-  return out;
-}
-
-function universalGet(source: string, tag: string): string {
-  const regex = new RegExp(`<[^>]*${tag}[^>]*>([\\s\\S]*?)<\\/[^>]*${tag}[^>]*>`);
-  const match = source.match(regex);
-  return match ? match[1].trim() : '';
-}
-
 interface ArrivalNotif  { id: string; stop: string; desc: string; line: string; color: number; time: string }
 
-// Distance threshold for "arriving": ~100 m real-world
-const ARRIVE_DIST     = 33;  
+const ARRIVE_DIST     = 33;
 const ARRIVE_COOLDOWN = 60_000;
 
 export default function CyberpunkMap({ refreshKey }: { refreshKey?: number }) {

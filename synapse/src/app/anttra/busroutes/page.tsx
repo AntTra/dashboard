@@ -3,10 +3,12 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import {
+  fetchDepartures, searchStop, fetchTrip,
+  type DepartureData, type Suggestion, type Call, type QuayData, type TripPattern, type Leg,
+} from './api';
 
 const CyberpunkMap = dynamic(() => import('./CyberpunkMap'), { ssr: false });
-
-// Cookie helpers 
 
 function makeCookieHelpers(key: string) {
   const read = (): Set<string> => {
@@ -27,89 +29,6 @@ function makeCookieHelpers(key: string) {
 const linesCookie = makeCookieHelpers('busroutes_hidden_lines');
 const quaysCookie = makeCookieHelpers('busroutes_hidden_quays');
 
-// Constants 
-
-const GQL = 'https://api.entur.io/journey-planner/v3/graphql';
-const GEO = 'https://api.entur.io/geocoder/v1/autocomplete';
-const HEADERS = { 'Content-Type': 'application/json', 'ET-Client-Name': 'synapse-anttra-busroutes' };
-
-const DEPARTURES_QUERY = `{
-  quay1: quay(id: "NSR:Quay:73729") {
-    description
-    estimatedCalls(numberOfDepartures: 12, timeRange: 7200) {
-      expectedDepartureTime aimedDepartureTime realtime
-      destinationDisplay { frontText }
-      serviceJourney { line { publicCode } }
-    }
-  }
-  quay2: quay(id: "NSR:Quay:102720") {
-    description
-    estimatedCalls(numberOfDepartures: 12, timeRange: 7200) {
-      expectedDepartureTime aimedDepartureTime realtime
-      destinationDisplay { frontText }
-      serviceJourney { line { publicCode } }
-    }
-  }
-  quay3: quay(id: "NSR:Quay:73421") {
-    description
-    estimatedCalls(numberOfDepartures: 12, timeRange: 7200) {
-      expectedDepartureTime aimedDepartureTime realtime
-      destinationDisplay { frontText }
-      serviceJourney { line { publicCode } }
-    }
-  }
-  quay4: quay(id: "NSR:Quay:73420") {
-    description
-    estimatedCalls(numberOfDepartures: 12, timeRange: 7200) {
-      expectedDepartureTime aimedDepartureTime realtime
-      destinationDisplay { frontText }
-      serviceJourney { line { publicCode } }
-    }
-  }
-}`;
-
-const TRIP_QUERY = `
-query Trip($from: Location!, $to: Location!, $dateTime: DateTime, $arriveBy: Boolean) {
-  trip(from: $from, to: $to, dateTime: $dateTime, arriveBy: $arriveBy, numTripPatterns: 5) {
-    tripPatterns {
-      duration
-      legs {
-        mode realtime
-        fromPlace { name }
-        toPlace { name }
-        line { publicCode }
-        fromEstimatedCall { expectedDepartureTime }
-        toEstimatedCall   { expectedArrivalTime }
-      }
-    }
-  }
-}`;
-
-// Types
-
-interface Call {
-  expectedDepartureTime: string;
-  aimedDepartureTime: string;
-  destinationDisplay: { frontText: string };
-  serviceJourney: { line: { publicCode: string } };
-  realtime: boolean;
-}
-
-interface QuayData { description: string; estimatedCalls: Call[] }
-interface DepartureData { quay1: QuayData; quay2: QuayData; quay3: QuayData; quay4: QuayData }
-
-interface Suggestion { id: string; label: string }
-
-interface Leg {
-  mode: string; realtime: boolean;
-  fromPlace: { name: string }; toPlace: { name: string };
-  line?: { publicCode: string };
-  fromEstimatedCall?: { expectedDepartureTime: string };
-  toEstimatedCall?: { expectedArrivalTime: string };
-}
-interface TripPattern { duration: number; legs: Leg[] }
-
-// Helpers
 
 const minsUntil  = (iso: string) => Math.round((new Date(iso).getTime() - Date.now()) / 60000);
 const delayMins  = (c: Call)     => Math.round((new Date(c.expectedDepartureTime).getTime() - new Date(c.aimedDepartureTime).getTime()) / 60000);
@@ -131,7 +50,6 @@ function useIsMobile() {
   return mobile;
 }
 
-// Sub-components
 
 function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
@@ -277,10 +195,7 @@ function TripResult({ pattern }: { pattern: TripPattern }) {
   );
 }
 
-// Page
-
 export default function BusRoutesPage() {
-  // Departures
   const [data,        setData]        = useState<DepartureData | null>(null);
   const [fetchErr,    setFetchErr]    = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -292,7 +207,6 @@ export default function BusRoutesPage() {
     setHiddenQuays(quaysCookie.read());
   }, []);
 
-  // Journey planner
   const [fromQuery,   setFromQuery]   = useState('');
   const [toQuery,     setToQuery]     = useState('');
   const [fromStop,    setFromStop]    = useState<Suggestion | null>(null);
@@ -317,59 +231,50 @@ export default function BusRoutesPage() {
 
   const [, tick] = useState(0);
 
-  // Departures fetch
-  const fetchDepartures = useCallback(async () => {
+  const doFetchDepartures = useCallback(async () => {
     try {
-      const res  = await fetch(GQL, { method: 'POST', headers: HEADERS, body: JSON.stringify({ query: DEPARTURES_QUERY }) });
-      const json = await res.json();
-      setData(json.data);
+      const data = await fetchDepartures();
+      setData(data);
       setLastUpdated(new Date());
       setFetchErr(false);
     } catch { setFetchErr(true); }
   }, []);
 
   useEffect(() => {
-    fetchDepartures();
-    const id = setInterval(fetchDepartures, 30000);
+    doFetchDepartures();
+    const id = setInterval(doFetchDepartures, 30000);
     return () => clearInterval(id);
-  }, [fetchDepartures]);
+  }, [doFetchDepartures]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     setMapRefreshKey(k => k + 1);
-    await fetchDepartures();
+    await doFetchDepartures();
     setRefreshing(false);
-  }, [fetchDepartures]);
+  }, [doFetchDepartures]);
 
   useEffect(() => {
     const id = setInterval(() => tick(n => n + 1), 30000);
     return () => clearInterval(id);
   }, []);
 
-  // Autocomplete
-  const searchStop = useCallback(async (q: string, set: (s: Suggestion[]) => void) => {
-    if (q.length < 2) { set([]); return; }
-    try {
-      const res  = await fetch(`${GEO}?text=${encodeURIComponent(q)}&layers=venue&size=6`);
-      const json = await res.json();
-      set((json.features ?? []).map((f: { properties: { id: string; label: string } }) => ({ id: f.properties.id, label: f.properties.label })));
-    } catch { set([]); }
+  const doSearchStop = useCallback(async (q: string, set: (s: Suggestion[]) => void) => {
+    try { set(await searchStop(q)); } catch { set([]); }
   }, []);
 
   useEffect(() => {
     if (fromStop) return;
-    const t = setTimeout(() => searchStop(fromQuery, setFromSugg), 280);
+    const t = setTimeout(() => doSearchStop(fromQuery, setFromSugg), 280);
     return () => clearTimeout(t);
-  }, [fromQuery, fromStop, searchStop]);
+  }, [fromQuery, fromStop, doSearchStop]);
 
   useEffect(() => {
     if (toStop) return;
-    const t = setTimeout(() => searchStop(toQuery, setToSugg), 280);
+    const t = setTimeout(() => doSearchStop(toQuery, setToSugg), 280);
     return () => clearTimeout(t);
-  }, [toQuery, toStop, searchStop]);
+  }, [toQuery, toStop, doSearchStop]);
 
-  // Trip search
-  const searchTrip = useCallback(async () => {
+  const doSearchTrip = useCallback(async () => {
     if (!fromStop || !toStop) return;
     setTripLoading(true);
     setTripErr(false);
@@ -381,24 +286,15 @@ export default function BusRoutesPage() {
         d.setHours(h, m, 0, 0);
         dateTime = d.toISOString();
       }
-      const res  = await fetch(GQL, {
-        method: 'POST', headers: HEADERS,
-        body: JSON.stringify({
-          query: TRIP_QUERY,
-          variables: { from: { place: fromStop.id }, to: { place: toStop.id }, dateTime, arriveBy },
-        }),
-      });
-      const json = await res.json();
-      setTrips(json.data?.trip?.tripPatterns ?? []);
+      setTrips(await fetchTrip(fromStop, toStop, dateTime, arriveBy));
     } catch { setTripErr(true); }
     finally { setTripLoading(false); }
   }, [fromStop, toStop, arriveBy, arriveTime]);
 
   useEffect(() => {
-    if (fromStop && toStop) searchTrip();
-  }, [fromStop, toStop, arriveBy, arriveTime, searchTrip]);
+    if (fromStop && toStop) doSearchTrip();
+  }, [fromStop, toStop, arriveBy, arriveTime, doSearchTrip]);
 
-  // Unique line codes for filter
   const allLines = data
     ? [...new Set([...data.quay1.estimatedCalls, ...data.quay2.estimatedCalls, ...data.quay3.estimatedCalls, ...data.quay4.estimatedCalls].map(c => c.serviceJourney.line.publicCode))].sort()
     : [];

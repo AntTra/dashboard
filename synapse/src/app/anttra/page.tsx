@@ -9,9 +9,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const HeroScene = dynamic(() => import('./HeroScene'), { ssr: false });
-
-// ─── data ────────────────────────────────────────────────────────────────────
+const HeroScene       = dynamic(() => import('./HeroScene'),       { ssr: false });
+const MannequinScene  = dynamic(() => import('./MannequinScene'),  { ssr: false });
 
 type ShowcaseItem = {
   label: string; sub: string; href: string; accent: string; live: boolean;
@@ -30,7 +29,6 @@ const showcase: ShowcaseItem[] = [
 
 const TICKER = 'ANTTRA  ·  TOO BAD  ·  DONT READ THIS  ·  FAKE NEWS  ·';
 
-// ─── page ─────────────────────────────────────────────────────────────────────
 
 const MIN_LOADING_MS = 800; // minimum time to show loading screen
 
@@ -76,7 +74,7 @@ export default function AnttraPage() {
     const ctx = gsap.context(() => {
       gsap.set('.main-title', { willChange: 'transform' });
 
-      // ── hero entrance — paused until loading screen exits ──
+      
       const heroTl = gsap.timeline({ defaults: { ease: 'power4.out' }, paused: true });
       heroTl
         .from('.nav-bar',          { opacity: 0, y: -18, duration: 0.8 })
@@ -88,7 +86,7 @@ export default function AnttraPage() {
         .from('.scroll-hint',      { opacity: 0, y: 8, duration: 0.8 }, '-=0.4');
       heroTlRef.current = heroTl;
 
-      // ── hero parallax ──
+      
       gsap.to('.main-title', {
         yPercent: -22, ease: 'none',
         scrollTrigger: { trigger: '.hero-section', start: 'top top', end: 'bottom top', scrub: 1.5 },
@@ -98,13 +96,13 @@ export default function AnttraPage() {
         scrollTrigger: { trigger: '.hero-section', start: 'top top', end: '+=180', scrub: 1 },
       });
 
-      // ── ticker ──
+      
       const ticker = tickerRef.current;
       if (ticker) {
         gsap.to(ticker, { x: -ticker.offsetWidth / 2, duration: 28, ease: 'none', repeat: -1 });
       }
 
-      // ── horizontal showcase ──
+      
       const track   = trackRef.current;
       const section = horizRef.current;
       if (track && section) {
@@ -133,7 +131,7 @@ export default function AnttraPage() {
 
   return (
     <>
-    {/* ── loading screen ── */}
+    {/* loading screen */}
     <div ref={loadingRef} className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#040404]"
       style={{ willChange: 'opacity' }}>
       <p className="font-mono text-[clamp(2rem,8vw,5rem)] tracking-[0.25em] text-[#d0d0d0] opacity-70 select-none">
@@ -148,7 +146,7 @@ export default function AnttraPage() {
 
     <div className="bg-[#040404] text-[#d0d0d0] selection:bg-white selection:text-black">
 
-      {/* ── single fixed overlay: noise + scanlines + vignette (1 compositor layer) ── */}
+      
       <div className="fixed inset-0 pointer-events-none z-10" style={{
         backgroundImage: [
           `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E")`,
@@ -163,7 +161,7 @@ export default function AnttraPage() {
         style={{ top: '50%', left: '50%', width: 700, height: 700, marginLeft: -350, marginTop: -350,
           background: 'radial-gradient(circle, rgba(160,80,255,0.055) 0%, transparent 68%)', borderRadius: '50%' }} />
 
-      {/* ── hero ── */}
+      
       <section className="hero-section relative flex flex-col min-h-screen px-8 md:px-16">
         {/* Three.js background */}
         <div className="absolute inset-0 z-0">
@@ -203,14 +201,14 @@ export default function AnttraPage() {
         </div>
       </section>
 
-      {/* ── ticker ── */}
+      
       <div className="relative z-20 overflow-hidden py-4" style={{ borderTop: '1px solid rgba(208,208,208,0.06)', borderBottom: '1px solid rgba(208,208,208,0.06)' }}>
         <div ref={tickerRef} className="whitespace-nowrap inline-block font-mono text-[10px] tracking-[0.28em] uppercase opacity-22 select-none">
           {(TICKER.repeat(10) + TICKER.repeat(10))}
         </div>
       </div>
 
-      {/* ── horizontal showcase ── */}
+      
       <section ref={horizRef} className="relative z-20 overflow-hidden" style={{ height: '100vh' }}>
         <div className="absolute left-8 md:left-16 top-8 z-10">
           <span className="font-mono text-[9px] tracking-[0.3em] uppercase opacity-30">showcase</span>
@@ -223,7 +221,14 @@ export default function AnttraPage() {
         </div>
       </section>
 
-      {/* ── status bar ── */}
+      <section className="relative z-20 flex flex-col items-center py-24"
+        style={{ borderTop: '1px solid rgba(208,208,208,0.06)' }}>
+        <span className="font-mono text-[9px] tracking-[0.3em] uppercase opacity-30 mb-10">model</span>
+        <div style={{ width: 'min(420px, 90vw)', height: 'min(540px, 70vh)' }}>
+          <MannequinScene />
+        </div>
+      </section>
+
       <div className="status-bar relative z-20 flex items-center justify-between px-8 md:px-16 py-5"
         style={{ borderTop: '1px solid rgba(208,208,208,0.06)' }}>
         <span className="font-mono text-[9px] tracking-[0.28em] uppercase opacity-18">
@@ -239,7 +244,6 @@ export default function AnttraPage() {
   );
 }
 
-// ─── showcase card ────────────────────────────────────────────────────────────
 
 function ShowcaseCard({ item, priority }: { item: ShowcaseItem; priority?: boolean }) {
   const [hovered, setHovered] = useState(false);

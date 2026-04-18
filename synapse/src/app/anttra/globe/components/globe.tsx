@@ -20,6 +20,12 @@ import saturnmap from './solarTextures/saturnmap.jpg'
 import saturnringmap from './solarTextures/saturnringcolor.jpg'
 import saturntrans from './solarTextures/saturnringpattern.gif'
 import getStarfield from './starfield';
+import { earthVertexShader, earthFragmentShader } from '../shaders/earthShaders';
+import {
+  saturnPlanetVertexShader, saturnPlanetFragmentShader,
+  saturnRingVertexShader, saturnRingFragmentShader,
+  atmosphereVertexShader, atmosphereFragmentShader,
+} from '../shaders/saturnShaders';
 
 type Img = {src: string};
 
@@ -91,41 +97,8 @@ export default function Globe({mode, clouds, night, moon}: {mode: 'earth' | 'sat
       );
       earthGroup.add(grid);
 
-	  const vertexShader = `
-        uniform float size;
-        uniform float elev;
-		uniform float cameraDistance;
-        uniform sampler2D elevTexture;
-        varying vec2 vUv;
-        varying float vVisible;
-		uniform float thresh;
-
-        void main() {
-          vUv = uv;
-          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-          float elv = texture2D(elevTexture, vUv).r;
-          vec3 vNormal = normalMatrix * normal;
-          vVisible = step(thresh, dot(-normalize(mvPosition.xyz), normalize(vNormal)));
-          mvPosition.z += elev * elv;
-
-		  float dist = -mvPosition.z;
-		  gl_PointSize = size * (4.0 / (dist + 0.1));
-		  gl_Position = projectionMatrix * mvPosition;
-        }
-      `;
-      const fragmentShader = `
-        uniform sampler2D colorTexture;
-        uniform sampler2D alphaTexture;
-        varying vec2 vUv;
-        varying float vVisible;
-				uniform float alpha;
-        void main() {
-          if (floor(vVisible + 0.1) == 0.0) discard;
-          float alpha = alpha - texture2D(alphaTexture, vUv).r;
-          vec3 color = texture2D(colorTexture, vUv).rgb;
-          gl_FragColor = vec4(color, alpha);
-        }
-      `;
+      const vertexShader   = earthVertexShader;
+      const fragmentShader = earthFragmentShader;
       earthMat = new THREE.ShaderMaterial({
 			uniforms: {
 				size: {value: 2.0},
@@ -193,25 +166,8 @@ export default function Globe({mode, clouds, night, moon}: {mode: 'earth' | 'sat
 		saturnMapTex.colorSpace = THREE.SRGBColorSpace;
 		saturnRingTexture.colorSpace = THREE.SRGBColorSpace;
 
-		const planetVert = `
-			uniform float size;
-			varying vec2 vUv;
-			varying float vVisible;
-			void main() {
-			vUv = uv;
-			vec4 mv = modelViewMatrix * vec4(position, 1.0);
-			gl_PointSize = size;
-			gl_Position = projectionMatrix * mv;
-			}
-		`;
-		const planetFrag = `
-			uniform sampler2D colorTexture;
-			varying vec2 vUv;
-			void main() {
-			vec3 c = texture2D(colorTexture, vUv).rgb;
-			gl_FragColor = vec4(c, 0.5);
-			}
-		`;
+		const planetVert = saturnPlanetVertexShader;
+		const planetFrag = saturnPlanetFragmentShader;
 		const saturnMat = new THREE.ShaderMaterial({
 			uniforms: {
 				size: {value: 3.0},
@@ -254,34 +210,8 @@ export default function Globe({mode, clouds, night, moon}: {mode: 'earth' | 'sat
 		saturnRingGeo.setAttribute('position', new THREE.BufferAttribute(ringPositions, 3));
 		saturnRingGeo.setAttribute('uv', new THREE.BufferAttribute(ringUVs, 2));
 
-		const ringVertex = `
-			varying vec2 vUv;
-			void main() {
-			vUv = uv;
-			vec4 mv = modelViewMatrix * vec4(position, 1.0);
-			gl_Position = projectionMatrix * mv;
-			gl_PointSize = 1.25;
-			}
-		`;
-		const ringFragment = `
-			uniform sampler2D colorTexture;
-			uniform sampler2D alphaTexture;
-			varying vec2 vUv;
-			void main() {
-			vec2 p = gl_PointCoord - 0.5;
-			if (dot(p,p) > 0.25) discard;
-
-			vec4 texColor = texture2D(colorTexture, vUv);
-			float alpha = texture2D(alphaTexture, vUv).r;
-
-			vec3 rgb = texColor.rgb * 0.78;
-			float a = alpha * 0.75;
-
-			gl_FragColor = vec4(rgb, a);
-			#include <tonemapping_fragment>
-			//#include <colorspace_fragment>
-			}
-		`;
+		const ringVertex   = saturnRingVertexShader;
+		const ringFragment = saturnRingFragmentShader;
 
 		const saturnRingMat = new THREE.ShaderMaterial({
 			uniforms: {
@@ -299,26 +229,8 @@ export default function Globe({mode, clouds, night, moon}: {mode: 'earth' | 'sat
 
 		const atmGeo = new THREE.SphereGeometry(1.005, 64, 64);
 		const atmMat = new THREE.ShaderMaterial({
-			vertexShader: `
-			varying vec3 vNormal;
-			varying vec3 vWorldPos;
-			void main() {
-				vNormal = normalize(normalMatrix * normal);
-				vec4 wp = modelMatrix * vec4(position, 1.0);
-				vWorldPos = wp.xyz;
-				gl_Position = projectionMatrix * viewMatrix * wp;
-			}
-			`,
-			fragmentShader: `
-				varying vec3 vNormal;
-				varying vec3 vWorldPos;
-				uniform vec3 cameraPos;
-				void main() {
-					vec3 V = normalize(cameraPos - vWorldPos);
-					float fres = pow(1.0 - max(dot(V, normalize(vNormal)), 0.0), 3.0);
-					gl_FragColor = vec4(0.65, 0.75, 1.0, fres * 0.25);
-				}
-			`,
+			vertexShader: atmosphereVertexShader,
+			fragmentShader: atmosphereFragmentShader,
 			uniforms: {cameraPos: {value: new THREE.Vector3()}},
 			blending: THREE.AdditiveBlending,
 			transparent: true,

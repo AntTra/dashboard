@@ -1,30 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-
-// ─── GitHub types ────────────────────────────────────────────────────────────
-interface GHUser {
-  avatar_url: string;
-  name: string | null;
-  bio: string | null;
-  public_repos: number;
-  followers: number;
-}
-
-interface GHRepo {
-  name: string;
-  description: string | null;
-  language: string | null;
-  stargazers_count: number;
-  html_url: string;
-}
-
-interface GHEvent {
-  type: string;
-  repo: { name: string };
-  payload: { commits?: { message: string }[]; ref?: string; action?: string };
-  created_at: string;
-}
+import { type GHUser, type GHRepo, type GHEvent, fetchGithubData } from './api';
 
 const GITHUB_HANDLE = 'AntTra';
 
@@ -135,22 +112,13 @@ export default function CVPage() {
   const [ghError,  setGhError]  = useState(false);
 
   useEffect(() => {
-    const base = `https://api.github.com/users/${GITHUB_HANDLE}`;
-    Promise.all([
-      fetch(base).then(r => r.json()),
-      fetch(`${base}/repos?sort=updated&per_page=6`).then(r => r.json()),
-      fetch(`${base}/events/public?per_page=12`).then(r => r.json()),
-    ]).then(([user, repos, events]) => {
-      if (user?.avatar_url) setGhUser(user);
-      if (Array.isArray(repos)) setGhRepos(repos);
-      if (Array.isArray(events)) {
-        setGhEvents(
-          (events as GHEvent[])
-            .filter(e => ['PushEvent','CreateEvent','PullRequestEvent','IssuesEvent'].includes(e.type))
-            .slice(0, 8)
-        );
-      }
-    }).catch(() => setGhError(true));
+    fetchGithubData(GITHUB_HANDLE)
+      .then(({ user, repos, events }) => {
+        if (user) setGhUser(user);
+        setGhRepos(repos);
+        setGhEvents(events);
+      })
+      .catch(() => setGhError(true));
   }, []);
 
   useEffect(() => {

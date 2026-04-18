@@ -5,7 +5,7 @@ export const HEADERS = { 'Content-Type': 'application/json', 'ET-Client-Name': '
 export const DEPARTURES_QUERY = `{
   quay1: quay(id: "NSR:Quay:73729") {
     description
-    estimatedCalls(numberOfDepartures: 12, timeRange: 7200) {
+    estimatedCalls(numberOfDepartures: 10, timeRange: 7200) {
       expectedDepartureTime aimedDepartureTime realtime
       destinationDisplay { frontText }
       serviceJourney { line { publicCode } }
@@ -13,7 +13,7 @@ export const DEPARTURES_QUERY = `{
   }
   quay2: quay(id: "NSR:Quay:102720") {
     description
-    estimatedCalls(numberOfDepartures: 12, timeRange: 7200) {
+    estimatedCalls(numberOfDepartures: 10, timeRange: 7200) {
       expectedDepartureTime aimedDepartureTime realtime
       destinationDisplay { frontText }
       serviceJourney { line { publicCode } }
@@ -21,7 +21,7 @@ export const DEPARTURES_QUERY = `{
   }
   quay3: quay(id: "NSR:Quay:73421") {
     description
-    estimatedCalls(numberOfDepartures: 12, timeRange: 7200) {
+    estimatedCalls(numberOfDepartures: 10, timeRange: 7200) {
       expectedDepartureTime aimedDepartureTime realtime
       destinationDisplay { frontText }
       serviceJourney { line { publicCode } }
@@ -29,7 +29,7 @@ export const DEPARTURES_QUERY = `{
   }
   quay4: quay(id: "NSR:Quay:73420") {
     description
-    estimatedCalls(numberOfDepartures: 12, timeRange: 7200) {
+    estimatedCalls(numberOfDepartures: 10, timeRange: 7200) {
       expectedDepartureTime aimedDepartureTime realtime
       destinationDisplay { frontText }
       serviceJourney { line { publicCode } }

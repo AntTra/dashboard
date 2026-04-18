@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@base-ui-components/react": "^1.0.0-beta.3",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@gsap/react": "^2.1.2",
     "@mediapipe/face_mesh": "^0.4.1633559619",
     "@mui/icons-material": "^7.3.2",

@@ -762,9 +762,8 @@ export default function CyberpunkMap({ refreshKey }: { refreshKey?: number }) {
         opacity: 0.55, letterSpacing: '0.08em', lineHeight: 2,
         pointerEvents: 'none', textAlign: 'right',
       }}>
-        <div style={{ color: '#ffdd00' }}>● live bus</div>
-        <div style={{ color: '#ff0000' }}>● departing stop</div>
-        <div style={{ color: '#00ffcc' }}>● approaching stop</div>
+        <div style={{ color: '#ff0000' }}>▲ live bus</div>
+        <div style={{ color: '#ffdd00' }}>▲ unmonitored bus</div>
       </div>
       )}
     </div>

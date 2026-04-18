@@ -149,9 +149,9 @@ export default function AnttraPage() {
       
       <div className="fixed inset-0 pointer-events-none z-10" style={{
         backgroundImage: [
-          `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E")`,
-          'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px)',
-          'radial-gradient(ellipse at 50% 55%, transparent 30%, rgba(0,0,0,0.7) 100%)',
+          `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E")`,
+          'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px)',
+          'radial-gradient(ellipse at 50% 55%, transparent 40%, rgba(0,0,0,0.45) 100%)',
         ].join(','),
         backgroundSize: '200px 200px, auto, auto',
       }} />
@@ -167,7 +167,7 @@ export default function AnttraPage() {
         <div className="absolute inset-0 z-0">
           <HeroScene onReady={handleSceneReady} />
           <div className="absolute inset-0"
-            style={{ background: 'linear-gradient(to bottom, rgba(4,4,4,0.2) 0%, transparent 35%, rgba(4,4,4,0.65) 100%)' }} />
+            style={{ background: 'linear-gradient(to bottom, rgba(4,4,4,0.1) 0%, transparent 40%, rgba(4,4,4,0.35) 100%)' }} />
         </div>
         <div className="nav-bar relative z-10 flex items-center justify-between pt-8 pb-0">
           <Link href="/" className="font-mono text-[10px] tracking-[0.3em] opacity-35 hover:opacity-100 transition-opacity uppercase">

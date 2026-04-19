@@ -233,7 +233,7 @@ function stopMarker(label: string, color: number): THREE.Group {
   ctx.fillStyle = 'rgba(0,0,0,0.85)'; ctx.fillRect(0, 0, cw, ch);
   const hex = '#' + color.toString(16).padStart(6, '0');
   ctx.strokeStyle = hex + '66'; ctx.lineWidth = 1.5; ctx.strokeRect(1, 1, cw - 2, ch - 2);
-  ctx.fillStyle = hex + '33'; ctx.font = 'bold 16px monospace';
+  ctx.fillStyle = hex + '33'; ctx.font = '18px monospace';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(label.toUpperCase(), cw / 2, ch / 2);
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), depthTest: false, transparent: true }));
@@ -537,7 +537,7 @@ export default function CyberpunkMap({ refreshKey }: { refreshKey?: number }) {
 
           // Buildings 16 civic tiles + 16 resid tiles 
           for (const buf of civic) addLines(buf, RED, true, 0.28);
-          for (const buf of resid) addLines(buf, 0x006666, true, 0.5);
+          for (const buf of resid) addLines(buf, 0x006666, true, 0.55);
 
           worker?.terminate();
           worker = null;

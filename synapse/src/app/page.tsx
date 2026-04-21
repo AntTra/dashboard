@@ -19,18 +19,18 @@ const people = [
     email: 'anton.tran@live.no',
   },
   {
-    handle: 'dotwavs',
-    href: '/dotwavs',
+    handle: 'michaelbcy',
+    href: '/michaelbcy',
     bg: '#010f09',
     accent: '#00e5a0',
-    role: '3D artist',
-    tags: ['3D', 'shaders', 'motion', 'javascript'],
-    github: 'https://github.com/dotwavs',
-    email: 'your@email.com',
+    role: 'computer graphics & animation',
+    tags: ['CG', 'mixed media', 'short films', 'cinematography'],
+    github: 'https://github.com/michaelbcy',
+    email: 'contact@michaelbc.xyz',
   },
 ];
 
-const stack: { label: string; owner: 'anttra' | 'dotwavs' | null }[] = [
+const stack: { label: string; owner: 'anttra' | 'michaelbcy' | null }[] = [
   { label: 'TypeScript',  owner: null },
   { label: 'React',       owner: null },
   { label: 'Next.js',     owner: null },
@@ -41,7 +41,7 @@ const stack: { label: string; owner: 'anttra' | 'dotwavs' | null }[] = [
   { label: 'OpenCV',      owner: 'anttra' },
   { label: 'NumPy',       owner: 'anttra' },
   { label: 'Base UI',     owner: null },
-  { label: 'GSAP',        owner: 'dotwavs' },
+  { label: 'GSAP',        owner: 'michaelbcy' },
 ];
 
 export default function LandingPage() {

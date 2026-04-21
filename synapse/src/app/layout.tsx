@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "synapse",
-  description: "anttra & dotwavs",
+  description: "anttra & michaelbcy",
 };
 
 export default function RootLayout({

@@ -3,6 +3,12 @@ The main point of this project is to get insights of how to create websites and 
 
 Demo: https://proj-synapse.vercel.app/
 
+## Active pages
+Currently, only Anttra page is active, as the main page and Michaelbcy is only scaffolding for future contributions
+Demo: https://proj-synapse.vercel.app/anttra
+
+![Anttra landing page](synapse/public/screenshot-anttra.png)
+
 ## Main libraries used
 * Framework: Next.js (React)
 * Animation: GSAP

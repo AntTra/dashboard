@@ -70,6 +70,7 @@ export default function AnttraPage() {
   const storyRef     = useRef<HTMLElement>(null);
   const heroTlRef    = useRef<gsap.core.Timeline | null>(null);
   const storyStRef     = useRef<ScrollTrigger | null>(null);
+  const storyTlRef     = useRef<gsap.core.Timeline | null>(null);
   const showcaseStRef  = useRef<ScrollTrigger | null>(null);
   const loadStartRef = useRef(Date.now());
   const [, setSceneReady] = useState(false);
@@ -148,6 +149,7 @@ export default function AnttraPage() {
         }, (beats.length - 1) * 2.2 + 0.9);
 
         storyStRef.current = storyTl.scrollTrigger ?? null;
+        storyTlRef.current = storyTl;
       }
 
       /* ── ticker ── */
@@ -276,50 +278,102 @@ export default function AnttraPage() {
         });
     });
 
-    /* ── section-snap scrolling ──
-       Jumps between the plain (non-pinned) sections on wheel input, with a
-       cooldown so one wheel tick = one section. While the narrative-act or
-       showcase pins are actively scrubbing, native scroll is left alone —
-       forcing a snap through those would skip past the scroll-driven story. */
+    /* ── per-slide snap scrolling ──
+       One wheel gesture = one "slide": the hero, each narrative beat, each
+       thesis row, each showcase card, and the outro. Stops are absolute
+       document scroll positions, recomputed only on ScrollTrigger.refresh
+       (never mid-gesture) — the story/showcase elements are pinned or
+       transformed by GSAP, so reading their live getBoundingClientRect()
+       while scrolled gives a moving target. */
     let snapping = false;
-    const getSnapStops = () => {
-      const els = [
-        document.querySelector<HTMLElement>('.hero-section'),
-        storyRef.current,
-        document.querySelector<HTMLElement>('.thesis-section'),
-        horizRef.current,
-        document.querySelector<HTMLElement>('.outro-section'),
-      ].filter((el): el is HTMLElement => !!el);
-      return els
-        .map(el => el.getBoundingClientRect().top + window.scrollY)
-        .sort((a, b) => a - b);
+    let unlockTimer: ReturnType<typeof setTimeout> | null = null;
+    let snapStops: number[] = [];
+
+    const recomputeSnapStops = () => {
+      const stops: number[] = [0];
+
+      const storySt = storyStRef.current;
+      const storyTl = storyTlRef.current;
+      if (storySt && storyTl) {
+        const dur = storyTl.duration();
+        const beatCount = acts.length;
+        for (let i = 0; i < beatCount; i++) {
+          const t = Math.min(dur, i * 2.2 + 1);
+          stops.push(storySt.start + (storySt.end - storySt.start) * (t / dur));
+        }
+      }
+
+      document.querySelectorAll<HTMLElement>('.thesis-row').forEach((row) => {
+        stops.push(row.getBoundingClientRect().top + window.scrollY);
+      });
+
+      const showcaseSt = showcaseStRef.current;
+      const track = trackRef.current;
+      if (showcaseSt && track) {
+        const cards = Array.from(track.querySelectorAll<HTMLElement>('.showcase-card'));
+        const maxX = track.scrollWidth - window.innerWidth;
+        cards.forEach((card) => {
+          const centerX = card.offsetLeft + card.offsetWidth / 2 - window.innerWidth / 2;
+          const x = Math.min(Math.max(centerX, 0), maxX);
+          stops.push(showcaseSt.start + x);
+        });
+      }
+
+      const outro = document.querySelector<HTMLElement>('.outro-section');
+      if (outro) {
+        const top = outro.getBoundingClientRect().top + window.scrollY;
+        stops.push(Math.min(top, document.documentElement.scrollHeight - window.innerHeight));
+      }
+
+      snapStops = Array.from(new Set(stops)).sort((a, b) => a - b);
     };
+
+    recomputeSnapStops();
+    ScrollTrigger.addEventListener('refresh', recomputeSnapStops);
+    /* ScrollTrigger debounces its own resize handling, but drive it
+       explicitly too so a resolution/orientation change always lands a
+       refresh (and thus a snapStops recompute) rather than depending on
+       internals we don't control. */
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+    const onResize = () => {
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => ScrollTrigger.refresh(), 150);
+    };
+    window.addEventListener('resize', onResize);
+
     const onWheel = (e: WheelEvent) => {
-      if (snapping) { e.preventDefault(); return; }
-      if (storyStRef.current?.isActive || showcaseStRef.current?.isActive) return;
+      if (snapping) {
+        e.preventDefault();
+        if (unlockTimer) clearTimeout(unlockTimer);
+        unlockTimer = setTimeout(() => { snapping = false; }, SNAP_COOLDOWN_MS);
+        return;
+      }
 
       const dir = e.deltaY > 0 ? 1 : -1;
       const y = window.scrollY;
       const EPS = 4;
-      const stops = getSnapStops();
       const target = dir > 0
-        ? stops.find(s => s > y + EPS)
-        : [...stops].reverse().find(s => s < y - EPS);
+        ? snapStops.find(s => s > y + EPS)
+        : [...snapStops].reverse().find(s => s < y - EPS);
       if (target === undefined) return;
 
       e.preventDefault();
       snapping = true;
       gsap.to(window, {
         scrollTo: { y: target, autoKill: false },
-        duration: 0.7, ease: 'power2.inOut',
-        onComplete: () => { setTimeout(() => { snapping = false; }, SNAP_COOLDOWN_MS); },
+        duration: reduced ? 0 : 0.7, ease: 'power2.inOut', overwrite: true,
+        onComplete: () => { unlockTimer = setTimeout(() => { snapping = false; }, SNAP_COOLDOWN_MS); },
       });
     };
     window.addEventListener('wheel', onWheel, { passive: false });
 
     return () => {
       ctx.revert();
+      ScrollTrigger.removeEventListener('refresh', recomputeSnapStops);
       window.removeEventListener('wheel', onWheel);
+      window.removeEventListener('resize', onResize);
+      if (unlockTimer) clearTimeout(unlockTimer);
+      if (resizeTimer) clearTimeout(resizeTimer);
     };
   }, []);
 
@@ -329,9 +383,6 @@ export default function AnttraPage() {
       style={{ background: BG, willChange: 'opacity' }}>
       <p className="font-mono text-[clamp(2rem,8vw,5rem)] tracking-[0.25em] text-[#d0d0d0] opacity-70 select-none">
         anttra
-      </p>
-      <p className="mt-3 font-mono text-[9px] tracking-[0.35em] uppercase opacity-30 text-[#d0d0d0]">
-        acquiring signal
       </p>
       <div className="mt-8 w-32 h-px bg-white/10 relative overflow-hidden">
         <div style={{ animation: 'loadSlide 1.1s ease-in-out infinite alternate',

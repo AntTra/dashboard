@@ -23,9 +23,15 @@ let   scrollN  = 0;                          // 0..1 hero scroll-out
 
 const timeUniforms: { value: number }[] = [];
 const drawUniforms: { value: number }[] = [];
+const estimateFadeUniforms: { value: number }[] = [];
 
 const DRAW_PERIOD = 14;      // seconds per estimate sweep
 const CAM_BASE    = new THREE.Vector3(0, 9, 62);
+
+function smoothstep(edge0: number, edge1: number, x: number) {
+  const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
 
 /* shared wave field ------------------------------------------------ */
 const WAVE_GLSL = /* glsl */`
@@ -148,14 +154,14 @@ function buildEstimate(curve: THREE.CatmullRomCurve3, lowPower: boolean) {
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   geo.setAttribute('aT',       new THREE.BufferAttribute(aT, 1));
 
-  const uTime = { value: 0 }, uDraw = { value: 0 };
-  timeUniforms.push(uTime); drawUniforms.push(uDraw);
+  const uTime = { value: 0 }, uDraw = { value: 0 }, uFade = { value: 1 };
+  timeUniforms.push(uTime); drawUniforms.push(uDraw); estimateFadeUniforms.push(uFade);
 
   const mat = new THREE.ShaderMaterial({
     transparent: true,
     depthWrite:  false,
     blending:    THREE.AdditiveBlending,
-    uniforms: { uTime, uDraw },
+    uniforms: { uTime, uDraw, uFade },
     vertexShader: /* glsl */`
       attribute float aT;
       uniform float uTime;
@@ -170,7 +176,7 @@ function buildEstimate(curve: THREE.CatmullRomCurve3, lowPower: boolean) {
         gl_Position = projectionMatrix * mv;
       }`,
     fragmentShader: /* glsl */`
-      uniform float uDraw;
+      uniform float uDraw, uFade;
       varying float vT, vFade;
       void main(){
         // comet: visible tail behind the head, sharp front
@@ -179,7 +185,7 @@ function buildEstimate(curve: THREE.CatmullRomCurve3, lowPower: boolean) {
         float tail = smoothstep(head - 0.80, head - 0.12, vT); // fade in toward head
         float hot  = smoothstep(head - 0.045, head, vT);       // bright head
         vec3 col = mix(vec3(0.28, 0.62, 0.85), vec3(0.75, 0.95, 1.0), hot);
-        float a = vFade * (0.10 + 0.55 * tail + 1.4 * hot);
+        float a = vFade * uFade * (0.10 + 0.55 * tail + 1.4 * hot);
         gl_FragColor = vec4(col, a);
       }`,
   });
@@ -375,6 +381,11 @@ function init({ canvas, w, h, dpr, lowPower, staticFrame }: {
     for (const u of timeUniforms) u.value = t;
     const sweep = (t / DRAW_PERIOD) % 1;
     for (const u of drawUniforms) u.value = sweep;
+    // the head resets 1 -> 0 instantly each cycle; without this the whole
+    // comet (tail + head) would vanish in a single frame at that instant —
+    // fade it out just before the wrap and back in just after instead.
+    const fade = Math.min(smoothstep(0, 0.06, sweep), smoothstep(1, 0.92, sweep));
+    for (const u of estimateFadeUniforms) u.value = fade;
 
     // camera: sway + mouse parallax + scroll lift
     mouseLp.lerp(mouse, 0.03);
